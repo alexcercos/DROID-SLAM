@@ -100,6 +100,8 @@ if __name__ == '__main__':
     parser.add_argument("--backend_nms", type=int, default=2)
     args = parser.parse_args()
 
+    args.upsample = False
+
     torch.multiprocessing.set_start_method('spawn')
 
     print("Running evaluation on {}".format(args.datapath))
