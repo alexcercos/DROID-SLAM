@@ -10,6 +10,8 @@ import open3d as o3d
 from lietorch import SE3
 import geom.projective_ops as pops
 
+o3d.utility.set_verbosity_level(o3d.utility.VerbosityLevel.Error)
+
 CAM_POINTS = np.array([
         [ 0,   0,   0],
         [-1,  -1, 1.5],
