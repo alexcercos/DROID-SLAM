@@ -132,5 +132,5 @@ if __name__ == '__main__':
     result = main_ape.ape(traj_ref, traj_est, est_name='traj', 
         pose_relation=PoseRelation.translation_part, align=True, correct_scale=False)
 
-    print(result.stats)
+    print(result)
 
