@@ -135,14 +135,16 @@ def create_fill_depth(depth_folder, output_folder):
         os.makedirs(output_folder)
 
     filenames = sorted(os.listdir(depth_folder))
+    total = len(filenames)
 
-    for filename in filenames:
+    for i,filename in enumerate(filenames):
         if not filename.lower().endswith('.png'):
             continue
         depth_path = os.path.join(depth_folder, filename)
 
         filled_img = fill_black_with_nearest(depth_path)
         Image.fromarray(filled_img, mode='I;16').save(os.path.join(output_folder, filename))
+        print(f"Image {i+1}/{total}",end="\r")
 
     print(f"Filled depth images saved in: {output_folder}")
 
@@ -152,7 +154,9 @@ def atenuated_infrarred(bn_folder, fdepth_folder, output_folder):
 
     filenames = sorted(os.listdir(bn_folder))
 
-    for filename in filenames:
+    total = len(filenames)
+
+    for i,filename in enumerate(filenames):
         if not filename.lower().endswith('.png'):
             continue
 
@@ -172,12 +176,13 @@ def atenuated_infrarred(bn_folder, fdepth_folder, output_folder):
             atenuated_img = bn_img * (1.0 - depth_exp)
 
             Image.fromarray(atenuated_img.astype(np.uint8), mode='L').save(os.path.join(output_folder, filename))
+            print(f"Image {i+1}/{total}",end="\r")
 
         except Exception as e:
             print(f"Error processing {filename}: {e}")
             continue
 
-    print(f"RGB-D images saved in: {output_folder}")
+    print(f"Atenuated images saved in: {output_folder}")
 
 
 #TODO: noisy depth images?
