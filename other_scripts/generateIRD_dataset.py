@@ -146,7 +146,7 @@ def create_fill_depth(depth_folder, output_folder):
 
     print(f"Filled depth images saved in: {output_folder}")
 
-def atenuated_infrarred(fbn_folder, depth_folder, output_folder):
+def atenuated_infrarred(bn_folder, fdepth_folder, output_folder):
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
 
@@ -157,28 +157,20 @@ def atenuated_infrarred(fbn_folder, depth_folder, output_folder):
             continue
 
         bn_path = os.path.join(bn_folder, filename)
-        depth_path = os.path.join(depth_folder, filename)
+        depth_path = os.path.join(fdepth_folder, filename)
 
         try:
-            bn_image = Image.open(bn_path).convert("RGB")
+            bn_image = Image.open(bn_path).convert("L")
+            bn_img = np.array(bn_image, dtype=np.float32)
+
             depth_image = Image.open(depth_path)
-            depth_np = np.array(depth_image, dtype=np.uint16)
+            depth_np = np.array(depth_image, dtype=np.float32)
 
-            depth_np /= (2**16-1)
-            depth_exp = np.power(depth_np, 2)
+            depth_np = np.divide(depth_np, 20000)
+            depth_exp = np.power(np.minimum(depth_np, 1), 2)
 
-            # # Normalize 16-bit depth to 8-bit for B channel
-            # depth_normalized = np.clip(depth_np / depth_max_value * 255.0, 0, 255).astype(np.uint8)
-            # depth_img_8bit = Image.fromarray(depth_normalized, mode='L')
+            atenuated_img = bn_img * (1.0 - depth_exp)
 
-            atenuated_img = bn_image * depth_exp
-
-            # # Use R and G from RGB, B from depth
-            # r, g, _ = rgb_image.split()
-            # merged = Image.merge("RGB", (r, r, depth_img_8bit))
-
-            # # Save output
-            # merged.save(os.path.join(output_folder, filename))
             Image.fromarray(atenuated_img.astype(np.uint8), mode='L').save(os.path.join(output_folder, filename))
 
         except Exception as e:
@@ -194,11 +186,22 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--datapath")
     parser.add_argument("--output")
+    parser.add_argument("--test", action="store_true")
     
     args = parser.parse_args()
 
-    image_folder = os.path.join(args.datapath, 'rgb')
-    depth_folder = os.path.join(args.datapath, 'depth')
-    output_folder = os.path.join(args.datapath, args.output)
+    if not args.test:
+
+        image_folder = os.path.join(args.datapath, 'rgb')
+        depth_folder = os.path.join(args.datapath, 'depth')
+        output_folder = os.path.join(args.datapath, args.output)
+        
+        create_fill_depth(depth_folder, output_folder)
     
-    create_fill_depth(depth_folder, output_folder)
+    else:
+
+        image_folder = os.path.join(args.datapath, 'bn')
+        depth_folder = os.path.join(args.datapath, 'fdepth')
+        output_folder = os.path.join(args.datapath, args.output)
+        
+        atenuated_infrarred(image_folder, depth_folder, output_folder)
