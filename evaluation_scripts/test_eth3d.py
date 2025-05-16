@@ -16,6 +16,8 @@ from droid import Droid
 
 import matplotlib.pyplot as plt
 
+imagefolder = "rgb"
+depthfolder = "fdepth"
 
 def show_image(image):
     image = image.permute(1, 2, 0).cpu().numpy()
@@ -26,8 +28,8 @@ def image_stream(datapath, use_depth=False, stride=1):
     """ image generator """
 
     fx, fy, cx, cy = np.loadtxt(os.path.join(datapath, 'calibration.txt')).tolist()
-    image_list = sorted(glob.glob(os.path.join(datapath, 'rgb', '*.png')))[::stride]
-    depth_list = sorted(glob.glob(os.path.join(datapath, 'depth', '*.png')))[::stride]
+    image_list = sorted(glob.glob(os.path.join(datapath, imagefolder, '*.png')))[::stride]
+    depth_list = sorted(glob.glob(os.path.join(datapath, depthfolder, '*.png')))[::stride]
 
     for t, (image_file, depth_file) in enumerate(zip(image_list, depth_list)):
         image = cv2.imread(image_file)
@@ -115,7 +117,7 @@ if __name__ == '__main__':
     import evo.main_ape as main_ape
     from evo.core.metrics import PoseRelation
 
-    image_path = os.path.join(args.datapath, 'rgb')
+    image_path = os.path.join(args.datapath, imagefolder)
     images_list = sorted(glob.glob(os.path.join(image_path, '*.png')))[::stride]
     tstamps = [float(x.split('/')[-1][:-4]) for x in images_list]
 
