@@ -32,7 +32,7 @@ evalset=(
     mannequin_7
     mannequin_face_1
     mannequin_face_2
-    mannequin_face_3
+#    mannequin_face_3
 #    mannequin_head
 #    motion_1
     planar_2
@@ -69,9 +69,5 @@ evalset=(
 )
 
 for seq in ${evalset[@]}; do
-    python evaluation_scripts/test_eth3d.py --datapath=$ETH_PATH/$seq --weights=droid.pth --disable_vis $@
+    python evaluation_scripts/test_eth3d.py --datapath=$ETH_PATH/$seq --weights=droid.pth --disable_vis --testmode=cate $@
 done
-
-
-
-

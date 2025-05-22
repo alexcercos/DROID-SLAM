@@ -148,7 +148,7 @@ def create_fill_depth(depth_folder, output_folder):
 
     print(f"Filled depth images saved in: {output_folder}")
 
-def atenuated_infrarred(bn_folder, fdepth_folder, output_folder):
+def atenuated_infrarred(bn_folder, fdepth_folder, output_folder, use_inverse=True):
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
 
@@ -170,10 +170,15 @@ def atenuated_infrarred(bn_folder, fdepth_folder, output_folder):
             depth_image = Image.open(depth_path)
             depth_np = np.array(depth_image, dtype=np.float32)
 
-            depth_np = np.divide(depth_np, 20000)
-            depth_exp = np.power(np.minimum(depth_np, 1), 2)
+            if use_inverse:
+                depth_exp = np.power(np.minimum(5000.0 / depth_np, 1), 2)
 
-            atenuated_img = bn_img * (1.0 - depth_exp)
+                atenuated_img = bn_img * depth_exp
+            else:
+                depth_np = np.divide(depth_np, 20000)
+                depth_exp = np.power(np.minimum(depth_np, 1), 2)
+
+                atenuated_img = bn_img * (1.0 - depth_exp)
 
             Image.fromarray(atenuated_img.astype(np.uint8), mode='L').save(os.path.join(output_folder, filename))
             print(f"Image {i+1}/{total}",end="\r")
@@ -191,22 +196,12 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--datapath")
     parser.add_argument("--output")
-    parser.add_argument("--test", action="store_true")
+    # parser.add_argument("--test", action="store_true")
     
     args = parser.parse_args()
 
-    if not args.test:
-
-        image_folder = os.path.join(args.datapath, 'rgb')
-        depth_folder = os.path.join(args.datapath, 'depth')
-        output_folder = os.path.join(args.datapath, args.output)
-        
-        create_fill_depth(depth_folder, output_folder)
+    image_folder = os.path.join(args.datapath, 'bn')
+    depth_folder = os.path.join(args.datapath, 'fdepth')
+    output_folder = os.path.join(args.datapath, args.output)
     
-    else:
-
-        image_folder = os.path.join(args.datapath, 'bn')
-        depth_folder = os.path.join(args.datapath, 'fdepth')
-        output_folder = os.path.join(args.datapath, args.output)
-        
-        atenuated_infrarred(image_folder, depth_folder, output_folder)
+    atenuated_infrarred(image_folder, depth_folder, output_folder)

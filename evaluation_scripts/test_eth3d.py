@@ -17,7 +17,7 @@ from droid import Droid
 import matplotlib.pyplot as plt
 
 imagefolder = "rgb"
-depthfolder = "fdepth"
+depthfolder = "depth"
 
 def show_image(image):
     image = image.permute(1, 2, 0).cpu().numpy()
@@ -80,13 +80,24 @@ if __name__ == '__main__':
     parser.add_argument("--backend_thresh", type=float, default=22.0)
     parser.add_argument("--backend_radius", type=int, default=2)
     parser.add_argument("--backend_nms", type=int, default=3)
+    parser.add_argument("--testmode", default="normal")
     args = parser.parse_args()
 
     args.upsample = False
 
+    if args.testmode == "fd":
+        imagefolder = "rgb"
+        depthfolder = "fdepth"
+    elif args.testmode == "ate":
+        imagefolder = "ate"
+        depthfolder = "depth"
+    elif args.testmode == "cate":
+        imagefolder = "c_ate"
+        depthfolder = "depth"
+
     torch.multiprocessing.set_start_method('spawn')
 
-    print("Running evaluation on {}".format(args.datapath))
+    print("Running evaluation on {} MODE= {} ({}, {})".format(args.datapath, args.testmode, imagefolder, depthfolder))
     print(args)
 
     # this can usually be set to 2-3 except for "camera_shake" scenes

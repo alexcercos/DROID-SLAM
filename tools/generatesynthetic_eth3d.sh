@@ -69,7 +69,7 @@ evalset=(
 )
 
 for seq in ${evalset[@]}; do
-    python other_scripts/generateIRD_dataset.py --datapath=$ETH_PATH/training/$seq --output=fdepth
+    python other_scripts/generateIRD_dataset.py --datapath=$ETH_PATH/training/$seq --output=c_ate
 done
 
 
