@@ -20,7 +20,7 @@ def show_image(image):
     cv2.imshow('image', image / 255.0)
     cv2.waitKey(1)
 
-def image_stream(datapath, use_depth=False, stride=1): #TODO adapt
+def image_stream(datapath, use_depth=False, stride=1):
     """ image generator """
 
     #IR calibration (from Skol3D/calibration/kinect_v2/ir)
@@ -30,8 +30,6 @@ def image_stream(datapath, use_depth=False, stride=1): #TODO adapt
     depth_list = sorted(glob.glob(os.path.join(datapath, "kinect_v2", "depth", "undistorted", '*.png')))[::stride]
 
     for t, (image_file, depth_file) in enumerate(zip(image_list, depth_list)):
-
-        #TODO ver en demo la estructura de image y depth en otros datasets
 
         image = io.read(image_file, 'kinect_v2', 'ir', 'undist').copy()
         depth = io.read(depth_file, 'kinect_v2', 'depth', 'undist').copy()

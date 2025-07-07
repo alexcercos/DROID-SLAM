@@ -19,6 +19,12 @@ import matplotlib.pyplot as plt
 imagefolder = "rgb"
 depthfolder = "depth"
 
+def show_image_depth(image):
+    image = image.cpu().numpy()
+    cv2.normalize(image, image, 0, 255, cv2.NORM_MINMAX)
+    cv2.imshow('depth', image)
+    cv2.waitKey(1)
+
 def show_image(image):
     image = image.permute(1, 2, 0).cpu().numpy()
     cv2.imshow('image', image / 255.0)
@@ -57,6 +63,27 @@ def image_stream(datapath, use_depth=False, stride=1):
         else:
             yield t, image[None], intrinsics
 
+def save_reconstruction(droid, reconstruction_path):
+
+    from pathlib import Path
+    import random
+    import string
+
+    t = droid.video.counter.value
+    tstamps = droid.video.tstamp[:t].cpu().numpy()
+    images = droid.video.images[:t].cpu().numpy()
+    disps = droid.video.disps_up[:t].cpu().numpy()
+    poses = droid.video.poses[:t].cpu().numpy()
+    intrinsics = droid.video.intrinsics[:t].cpu().numpy()
+
+    Path("reconstructions/{}".format(reconstruction_path)).mkdir(parents=True, exist_ok=True)
+    np.save("reconstructions/{}/tstamps.npy".format(reconstruction_path), tstamps)
+    np.save("reconstructions/{}/images.npy".format(reconstruction_path), images)
+    np.save("reconstructions/{}/disps.npy".format(reconstruction_path), disps)
+    np.save("reconstructions/{}/poses.npy".format(reconstruction_path), poses)
+    np.save("reconstructions/{}/intrinsics.npy".format(reconstruction_path), intrinsics)
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--datapath")
@@ -81,6 +108,7 @@ if __name__ == '__main__':
     parser.add_argument("--backend_radius", type=int, default=2)
     parser.add_argument("--backend_nms", type=int, default=3)
     parser.add_argument("--testmode", default="normal")
+    parser.add_argument("--reconstruction_path", help="path to saved reconstruction")
     args = parser.parse_args()
 
     args.upsample = False
@@ -115,6 +143,9 @@ if __name__ == '__main__':
         
         droid.track(t, image, depth, intrinsics=intrinsics)
     
+    if args.reconstruction_path is not None:
+        save_reconstruction(droid, args.reconstruction_path)
+
     traj_est = droid.terminate(image_stream(args.datapath, use_depth=False, stride=stride))
 
     ### run evaluation ###
