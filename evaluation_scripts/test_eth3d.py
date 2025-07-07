@@ -109,9 +109,8 @@ if __name__ == '__main__':
     parser.add_argument("--backend_nms", type=int, default=3)
     parser.add_argument("--testmode", default="normal")
     parser.add_argument("--reconstruction_path", help="path to saved reconstruction")
+    parser.add_argument("--upsample", action="store_true")
     args = parser.parse_args()
-
-    args.upsample = False
 
     if args.testmode == "fd":
         imagefolder = "rgb"
