@@ -121,6 +121,9 @@ if __name__ == '__main__':
     elif args.testmode == "cate":
         imagefolder = "c_ate"
         depthfolder = "depth"
+    elif args.testmode == "ir":
+        imagefolder = "ir"
+        depthfolder = "depth"
 
     torch.multiprocessing.set_start_method('spawn')
 
