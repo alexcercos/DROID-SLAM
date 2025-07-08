@@ -93,11 +93,13 @@ if __name__ == '__main__':
     elif args.testmode == "cate":
         imagefolder = "c_ate"
         depthfolder = "depth"
+    elif args.testmode == "ir":
+        imagefolder = "ir"
+        depthfolder = "depth"
 
     torch.multiprocessing.set_start_method('spawn')
 
     #add only sequence
-    args.datapath = "datasets/ETH3D-SLAM/training/"+args.datapath
     print("Running evaluation on {} MODE= {} ({}, {})".format(args.datapath, args.testmode, imagefolder, depthfolder))
     print(args)
 
@@ -144,7 +146,9 @@ if __name__ == '__main__':
     traj_ref, traj_est = sync.associate_trajectories(traj_ref, traj_est)
 
     result = main_ape.ape(traj_ref, traj_est, est_name='traj', 
-        pose_relation=PoseRelation.translation_part, align=True, correct_scale=False)
+        pose_relation=PoseRelation.translation_part, align=True, correct_scale=True)
+
+    print(result)
 
     visualize_trajectories([traj_est.positions_xyz, traj_ref.positions_xyz], [[1,0,0],[0,1,0]])
 

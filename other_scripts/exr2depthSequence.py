@@ -1,4 +1,4 @@
-#OPENCV_IO_ENABLE_OPENEXR=1
+# OPENCV_IO_ENABLE_OPENEXR=1
 
 import cv2
 import numpy as np
@@ -11,9 +11,11 @@ frequency = 2e7
 frame_folders = glob.glob("frame*")
 
 if not os.path.exists("depth"):
-	os.makedirs("depth")
+    os.makedirs("depth")
 if not os.path.exists("ir"):
-	os.makedirs("ir")
+    os.makedirs("ir")
+if not os.path.exists("ate"):
+    os.makedirs("ate")
 
 for fr in frame_folders:
 
@@ -56,9 +58,9 @@ for fr in frame_folders:
     # cv2.imwrite(f"frame27_phase.png", phase)
     cv2.imwrite(f"depth/{frame_i+1.0:07.1f}.png", depth)
 
-    # amplitude_norm = cv2.normalize(amplitude, None, 0, 1, cv2.NORM_MINMAX)
-    # amplitude_norm = np.clip(amplitude_norm * 65535, 0, 65535).astype(np.uint16)
-    # cv2.imwrite(f"frame27_ampnorm.png", amplitude_norm)
+    amplitude_norm = cv2.normalize(amplitude, None, 0, 1, cv2.NORM_MINMAX)
+    amplitude_norm = np.clip(amplitude_norm * 65535, 0, 65535).astype(np.uint16)
+    cv2.imwrite(f"ate/{frame_i+1.0:07.1f}.png", amplitude_norm)
 
     print(f"Processed {fr}")
 
