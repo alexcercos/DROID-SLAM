@@ -11,6 +11,7 @@ import argparse
 
 import torch.nn.functional as F
 from droid import Droid
+from visualization import create_camera_actor
 
 from plot_trajectory import *
 
@@ -79,6 +80,7 @@ if __name__ == '__main__':
     parser.add_argument("--backend_radius", type=int, default=2)
     parser.add_argument("--backend_nms", type=int, default=3)
     parser.add_argument("--testmode", default="normal")
+    parser.add_argument("--cam_scale", type=float, default=0.05)
 
     args = parser.parse_args()
 
@@ -150,5 +152,21 @@ if __name__ == '__main__':
 
     print(result)
 
-    visualize_trajectories([traj_est.positions_xyz, traj_ref.positions_xyz], [[1,0,0],[0,1,0]])
+    geometries = []
+
+    for pos,quat in zip(traj_est.positions_xyz, traj_est.orientations_quat_wxyz):
+        cam_actor = create_camera_actor(False, args.cam_scale)
+        R = cam_actor.get_rotation_matrix_from_quaternion(quat)
+        cam_actor.rotate(R, center=(0, 0, 0))
+        cam_actor.translate(pos)
+        geometries.append(cam_actor)
+    
+    for pos,quat in zip(traj_ref.positions_xyz, traj_ref.orientations_quat_wxyz):
+        cam_actor = create_camera_actor(True, args.cam_scale)
+        R = cam_actor.get_rotation_matrix_from_quaternion(quat)
+        cam_actor.rotate(R, center=(0, 0, 0))
+        cam_actor.translate(pos)
+        geometries.append(cam_actor)
+
+    visualize_trajectories([traj_est.positions_xyz, traj_ref.positions_xyz], [[1,0,0],[0,1,0]], geometries)
 

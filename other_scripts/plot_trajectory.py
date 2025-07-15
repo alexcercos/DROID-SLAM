@@ -14,10 +14,8 @@ def load_trajectory(filename):
 
     return np.array(positions)
 
-def visualize_trajectories(arr_positions, arr_colors=[[1,0,0]]):
+def visualize_trajectories(arr_positions, arr_colors=[[1,0,0]], geometries = []):
     # Create Open3D LineSet
-
-    geometries = []
 
     for positions,color in zip(arr_positions,arr_colors):
 
