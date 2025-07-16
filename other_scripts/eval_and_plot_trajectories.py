@@ -154,15 +154,17 @@ if __name__ == '__main__':
 
     geometries = []
 
+    #simulated = red
     for pos,quat in zip(traj_est.positions_xyz, traj_est.orientations_quat_wxyz):
-        cam_actor = create_camera_actor(False, args.cam_scale)
+        cam_actor = create_camera_actor(True, args.cam_scale)
         R = cam_actor.get_rotation_matrix_from_quaternion(quat)
         cam_actor.rotate(R, center=(0, 0, 0))
         cam_actor.translate(pos)
         geometries.append(cam_actor)
     
+    #ground truth = green/blue
     for pos,quat in zip(traj_ref.positions_xyz, traj_ref.orientations_quat_wxyz):
-        cam_actor = create_camera_actor(True, args.cam_scale)
+        cam_actor = create_camera_actor(False, args.cam_scale)
         R = cam_actor.get_rotation_matrix_from_quaternion(quat)
         cam_actor.rotate(R, center=(0, 0, 0))
         cam_actor.translate(pos)
