@@ -53,14 +53,7 @@ for fr in frame_folders:
 
     frame_i = int(fr[5:]) # numero de frame, tal como estaba procesado el nombre ("frameX")
 
-    # cv2.imwrite(f"frame27_int.png", intensity)
     cv2.imwrite(f"ir/{frame_i+1.0:07.1f}.png", amplitude)
-    # cv2.imwrite(f"frame27_phase.png", phase)
     cv2.imwrite(f"depth/{frame_i+1.0:07.1f}.png", depth)
-
-
-    # amplitude_norm = cv2.normalize(amplitude, None, 0, 1, cv2.NORM_MINMAX)
-    # amplitude_norm = np.clip(amplitude_norm * 65535, 0, 65535).astype(np.uint16)
-    # cv2.imwrite(f"ate/{frame_i+1.0:07.1f}.png", amplitude_norm)
 
     print(f"Processed {fr}")

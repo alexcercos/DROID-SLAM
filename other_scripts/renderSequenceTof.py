@@ -11,8 +11,6 @@ import math
 import os
 import subprocess
 import glob
-# import h5py
-# import time
 
 def s2Int(s):
 	if s[-1] in ["M","m"]:
@@ -43,7 +41,7 @@ def replaceOrInsert(value, section, target):
 	return target
 
 luxconsole = r"C:\Users\Administrador\Documents\MultipathTofSimulator\win32\luxconsole.exe"
-exr2depth = r"C:\Users\Administrador\Documents\MultipathTofSimulator\exr2depth\bin\exr2depth.exe"
+
 
 if __name__ == "__main__":
 	shutdown = False
@@ -51,6 +49,8 @@ if __name__ == "__main__":
 
 		print("Datapath []: ",end="")
 		datapath = getVal("").replace('''\\''','''/''')
+		print("Start frame [0]; ",end="")
+		startFrame = s2Int(getVal("0"))
 
 		lxs_file_list = sorted(glob.glob(os.path.join(datapath, "*.lxs")))
 		positions = []
@@ -85,7 +85,17 @@ if __name__ == "__main__":
 		if not render_outdir == "" and not os.path.exists(render_outdir):
 			os.makedirs(render_outdir)
 		
+		#Ground truth to start
 		for file_i,file in enumerate(lxs_file_list):
+			positions.append(re.findall(r"LookAt (.+)", template)[0] + "\n")
+
+		with open(os.path.join(render_outdir,"ground_truth.txt"), "w") as gt_file:
+			gt_file.writelines(positions)
+
+		for file_i,file in enumerate(lxs_file_list):
+
+			if file_i < startFrame:
+				continue
 			
 			#Create frame directory
 			if not os.path.exists(os.path.join(render_outdir, f"frame{file_i}")):
@@ -95,8 +105,7 @@ if __name__ == "__main__":
 			template = f.read()
 			f.close()
 
-			#Add ground truth
-			positions.append(re.findall(r"LookAt (.+)", template)[0] + "\n")
+			
 			
 			p = re.compile(r'''eyedepth" \[[0-9]+\]''')
 			template = re.sub(p,'''eyedepth" [%u]''' % eyeDepth,template,count = 1)
@@ -150,26 +159,22 @@ if __name__ == "__main__":
 				p = subprocess.Popen([luxconsole, lxsFiles[i]])
 				p.wait()
 			
-			# p = subprocess.Popen([exr2depth, exr_files[0], exr_files[1], exr_files[2], exr_files[3], f"{render_outdir}/{file_prefix}{file_i}", f"{toffreq//1000000}Mhz", "bmp"])
-			# p.wait()
-			
 			#Delete generated files
 			
 			for del_file in lxsFiles:
 				os.remove(del_file)
-			# for del_file in exr_files:
-			# 	os.remove(del_file)
 
 			# Move exr files
 			for exr_file in exr_files:
 				os.rename(f"{datapath}/{exr_file}", f"{render_outdir}/frame{file_i}/{exr_file}")
 
 		print("\nfinished")
-
-		with open(os.path.join(render_outdir,"ground_truth.txt"), "w") as gt_file:
-			gt_file.writelines(positions)
 	
 	except Exception as e:
+
+		with open("ERROR.txt","w") as f:
+			f.write(str(e))
+		
 		print("ERROR:",str(e))
 
 	finally:

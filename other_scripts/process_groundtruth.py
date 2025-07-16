@@ -5,7 +5,7 @@ gt = []
 with open("ground_truth.txt","r") as f:
     gt = f.readlines()
 
-with open("groud_truth_processed.txt","w") as f:
+with open("groundtruth_processed.txt","w") as f:
 
     f.write("# timestamp tx ty tz qx qy qz qw\n")
     
@@ -15,9 +15,9 @@ with open("groud_truth_processed.txt","w") as f:
         # Compute quaternion
 
         #forward
-        fX = targetX - eyeX
-        fY = targetY - eyeY
-        fZ = targetZ - eyeZ
+        fX = -(targetX - eyeX)
+        fY = -(targetY - eyeY)
+        fZ = -(targetZ - eyeZ)
 
         #right
         rightVec = np.cross([fX,fY,fZ],[uX,uY,uZ])
