@@ -87,6 +87,9 @@ if __name__ == "__main__":
 		
 		#Ground truth to start
 		for file_i,file in enumerate(lxs_file_list):
+			f = open(file)
+			template = f.read()
+			f.close()
 			positions.append(re.findall(r"LookAt (.+)", template)[0] + "\n")
 
 		with open(os.path.join(render_outdir,"ground_truth.txt"), "w") as gt_file:
