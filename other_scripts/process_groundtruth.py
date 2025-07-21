@@ -2,10 +2,10 @@ import numpy as np
 import math
 
 gt = []
-with open("ground_truth.txt","r") as f:
+with open("ground_truth_raw.txt","r") as f:
     gt = f.readlines()
 
-with open("groundtruth_processed.txt","w") as f:
+with open("groundtruth.txt","w") as f:
 
     f.write("# timestamp tx ty tz qx qy qz qw\n")
     
@@ -15,12 +15,12 @@ with open("groundtruth_processed.txt","w") as f:
         # Compute quaternion
 
         #forward
-        fX = -(targetX - eyeX)
-        fY = -(targetY - eyeY)
-        fZ = -(targetZ - eyeZ)
+        fX = (targetX - eyeX)
+        fY = (targetY - eyeY)
+        fZ = (targetZ - eyeZ)
 
         #right
-        rightVec = np.cross([fX,fY,fZ],[uX,uY,uZ])
+        rightVec = -np.cross([fX,fY,fZ],[uX,uY,uZ])
         rX,rY,rZ =rightVec / np.linalg.norm(rightVec)
 
         #Should be normalized and orthonormal (1,1,1,0,0,0)
