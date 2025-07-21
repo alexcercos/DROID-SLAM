@@ -1,18 +1,13 @@
+import sys
+sys.path.append('droid_slam')
+
 import numpy as np
 import open3d as o3d
 
-def load_trajectory(filename):
-    positions = []
+import os
+from visualization import create_camera_actor
+import argparse
 
-    with open(filename, 'r') as f:
-        for line in f:
-            if line.startswith("#"):
-                continue
-            parts = line.strip().split()
-            tx, ty, tz = map(float, parts[1:4])
-            positions.append([tx, ty, tz])
-
-    return np.array(positions)
 
 def visualize_trajectories(arr_positions, arr_colors=[[1,0,0]], geometries = []):
     # Create Open3D LineSet
@@ -40,8 +35,31 @@ def visualize_trajectories(arr_positions, arr_colors=[[1,0,0]], geometries = [])
                                       lookat=[0.0, 0.0, 0.0],
                                       up=[0.0, 0.0, 1.0])
 
-if __name__ == "__main__":
-    # Replace with your actual filename
-    trajectory_file = "/home/alejandro/Documentos/DROID-SLAM/datasets/ETH3D-SLAM/training/" + input("Sequence: ") + "/groundtruth.txt"
-    trajectory = load_trajectory(trajectory_file)
-    visualize_trajectories([trajectory])
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--datapath")
+    parser.add_argument("--cam_scale", type=float, default=0.05)
+
+    args = parser.parse_args()
+
+    from evo.core.trajectory import PoseTrajectory3D
+    from evo.tools import file_interface
+
+    gt_file = os.path.join(args.datapath, 'groundtruth.txt')
+    traj_ref = file_interface.read_tum_trajectory_file(gt_file)
+
+
+    geometries = []
+    
+    #ground truth = green/blue
+    for pos,quat in zip(traj_ref.positions_xyz, traj_ref.orientations_quat_wxyz):
+        cam_actor = create_camera_actor(False, args.cam_scale)
+        R = cam_actor.get_rotation_matrix_from_quaternion(quat)
+        cam_actor.rotate(R, center=(0, 0, 0))
+        cam_actor.translate(pos)
+        geometries.append(cam_actor)
+    
+    visualize_trajectories([traj_ref.positions_xyz], [[0,1,0]], geometries)
+
