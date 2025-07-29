@@ -14,13 +14,14 @@ if not os.path.exists("depth"):
     os.makedirs("depth")
 if not os.path.exists("ir"):
     os.makedirs("ir")
-if not os.path.exists("ate"):
-    os.makedirs("ate")
+if not os.path.exists("rgb"):
+    os.makedirs("rgb")
 
 for fr in frame_folders:
 
 
     r = []
+    rgb = []
     for i in range(4):
         img_path = f"{fr}/image_phase{i}.exr"
 
@@ -35,8 +36,10 @@ for fr in frame_folders:
         # Extract red channel (OpenCV uses BGR order)
         red_channel = img[:, :, 2]
         r.append(red_channel)
+        rgb.append(img)
         
     # intensity = (r[0] + r[1] + r[2] + r[3]) / 4.0
+    rgb_img = (rgb[0] + rgb[1] + rgb[2] + rgb[3]) / 4.0
 
     amplitude = (r[0] - r[2]) ** 2.0 + (r[3] - r[1]) **2.0
     amplitude = np.sqrt(amplitude) * np.pi / 2.0
@@ -55,5 +58,7 @@ for fr in frame_folders:
 
     cv2.imwrite(f"ir/{frame_i+1.0:07.1f}.png", amplitude)
     cv2.imwrite(f"depth/{frame_i+1.0:07.1f}.png", depth)
+
+    cv2.imwrite(f"rgb/{frame_i+1.0:07.1f}.png", rgb_img)
 
     print(f"Processed {fr}")
