@@ -107,7 +107,7 @@ if __name__ == '__main__':
     parser.add_argument("--backend_thresh", type=float, default=22.0)
     parser.add_argument("--backend_radius", type=int, default=2)
     parser.add_argument("--backend_nms", type=int, default=3)
-    parser.add_argument("--testmode", default="normal")
+    parser.add_argument("--testmode", default="rgb")
     parser.add_argument("--reconstruction_path", help="path to saved reconstruction")
     parser.add_argument("--upsample", action="store_true")
     args = parser.parse_args()
@@ -115,14 +115,8 @@ if __name__ == '__main__':
     if args.testmode == "fd":
         imagefolder = "rgb"
         depthfolder = "fdepth"
-    elif args.testmode == "ate":
-        imagefolder = "ate"
-        depthfolder = "depth"
-    elif args.testmode == "cate":
-        imagefolder = "c_ate"
-        depthfolder = "depth"
-    elif args.testmode == "ir":
-        imagefolder = "ir"
+    else:
+        imagefolder = args.testmode
         depthfolder = "depth"
 
     torch.multiprocessing.set_start_method('spawn')

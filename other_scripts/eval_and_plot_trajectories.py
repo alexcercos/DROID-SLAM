@@ -79,7 +79,7 @@ if __name__ == '__main__':
     parser.add_argument("--backend_thresh", type=float, default=22.0)
     parser.add_argument("--backend_radius", type=int, default=2)
     parser.add_argument("--backend_nms", type=int, default=3)
-    parser.add_argument("--testmode", default="normal")
+    parser.add_argument("--testmode", default="rgb")
     parser.add_argument("--cam_scale", type=float, default=0.05)
 
     args = parser.parse_args()
@@ -89,14 +89,8 @@ if __name__ == '__main__':
     if args.testmode == "fd":
         imagefolder = "rgb"
         depthfolder = "fdepth"
-    elif args.testmode == "ate":
-        imagefolder = "ate"
-        depthfolder = "depth"
-    elif args.testmode == "cate":
-        imagefolder = "c_ate"
-        depthfolder = "depth"
-    elif args.testmode == "ir":
-        imagefolder = "ir"
+    else:
+        imagefolder = args.testmode
         depthfolder = "depth"
 
     torch.multiprocessing.set_start_method('spawn')
@@ -169,6 +163,8 @@ if __name__ == '__main__':
         cam_actor.rotate(R, center=(0, 0, 0))
         cam_actor.translate(pos)
         geometries.append(cam_actor)
+    
+    #TODO mark start
 
     visualize_trajectories([traj_est.positions_xyz, traj_ref.positions_xyz], [[1,0,0],[0,1,0]], geometries)
 
