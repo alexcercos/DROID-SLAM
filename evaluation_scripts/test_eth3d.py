@@ -108,6 +108,7 @@ if __name__ == '__main__':
     parser.add_argument("--backend_radius", type=int, default=2)
     parser.add_argument("--backend_nms", type=int, default=3)
     parser.add_argument("--testmode", default="rgb")
+    parser.add_argument("--no_use_depth", action="store_true")
     parser.add_argument("--reconstruction_path", help="path to saved reconstruction")
     parser.add_argument("--upsample", action="store_true")
     args = parser.parse_args()
@@ -137,7 +138,10 @@ if __name__ == '__main__':
             args.image_size = [image.shape[2], image.shape[3]]
             droid = Droid(args)
         
-        droid.track(t, image, depth, intrinsics=intrinsics)
+        if args.no_use_depth:
+            droid.track(t, image, intrinsics=intrinsics)
+        else:
+            droid.track(t, image, depth, intrinsics=intrinsics)
     
     if args.reconstruction_path is not None:
         save_reconstruction(droid, args.reconstruction_path)
@@ -170,7 +174,7 @@ if __name__ == '__main__':
     traj_ref, traj_est = sync.associate_trajectories(traj_ref, traj_est)
 
     result = main_ape.ape(traj_ref, traj_est, est_name='traj', 
-        pose_relation=PoseRelation.translation_part, align=True, correct_scale=False)
+        pose_relation=PoseRelation.translation_part, align=True, correct_scale=True)
 
     print(result)
 
