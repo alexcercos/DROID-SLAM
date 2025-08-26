@@ -68,7 +68,7 @@ evalset=(
     vicon_light_2
 )
 
-TUM_PATH=datasets/TUM-RGBD/$seq
+TUM_PATH=datasets/TUM-RGBD
 
 evalset_tum=(
     rgbd_dataset_freiburg1_360
