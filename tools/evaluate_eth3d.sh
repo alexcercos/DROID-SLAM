@@ -77,7 +77,7 @@ evalset_tum=(
     rgbd_dataset_freiburg1_floor
     rgbd_dataset_freiburg1_plant
     rgbd_dataset_freiburg1_room
-    rgbd_dataset_freiburg1_rpy
+#    rgbd_dataset_freiburg1_rpy
     rgbd_dataset_freiburg1_teddy
     rgbd_dataset_freiburg1_xyz
 )
