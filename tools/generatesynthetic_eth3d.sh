@@ -68,10 +68,26 @@ evalset=(
     vicon_light_2
 )
 
-for seq in ${evalset[@]}; do
-    python other_scripts/generateIRD_dataset.py --datapath=$ETH_PATH/training/$seq --output=c_ate
+TUM_PATH=datasets/TUM-RGBD
+
+evalset_tum=(
+    rgbd_dataset_freiburg1_360
+    rgbd_dataset_freiburg1_desk
+    rgbd_dataset_freiburg1_desk2
+    rgbd_dataset_freiburg1_floor
+    rgbd_dataset_freiburg1_plant
+    rgbd_dataset_freiburg1_room
+    rgbd_dataset_freiburg1_rpy
+    rgbd_dataset_freiburg1_teddy
+    rgbd_dataset_freiburg1_xyz
+)
+
+# for seq in ${evalset[@]}; do
+#     python other_scripts/generateIRD_dataset.py --datapath=$ETH_PATH/training/$seq --output=c_ate
+# done
+
+for seq in ${evalset_tum[@]}; do
+    python other_scripts/generateIRD_dataset.py --datapath=$TUM_PATH/$seq
 done
-
-
 
 

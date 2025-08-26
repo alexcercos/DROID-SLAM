@@ -58,7 +58,9 @@ def rgb_to_average_grayscale(rgb_folder, output_folder):
 
     filenames = sorted(os.listdir(rgb_folder))
 
-    for filename in filenames:
+    total = len(filenames)
+
+    for i,filename in enumerate(filenames):
         if not filename.lower().endswith('.png'):
             continue
         rgb_path = os.path.join(rgb_folder, filename)
@@ -76,6 +78,7 @@ def rgb_to_average_grayscale(rgb_folder, output_folder):
 
         # Save
         gray_image.save(os.path.join(output_folder, filename))
+        print(f"Image {i+1}/{total}",end="\r")
 
     print(f"Grayscale images saved in: {output_folder}")
 
@@ -195,13 +198,16 @@ def atenuated_infrarred(bn_folder, fdepth_folder, output_folder, use_inverse=Tru
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--datapath")
-    parser.add_argument("--output")
     # parser.add_argument("--test", action="store_true")
     
     args = parser.parse_args()
 
-    image_folder = os.path.join(args.datapath, 'bn')
-    depth_folder = os.path.join(args.datapath, 'fdepth')
-    output_folder = os.path.join(args.datapath, args.output)
-    
-    atenuated_infrarred(image_folder, depth_folder, output_folder)
+    rgb_folder = os.path.join(args.datapath, 'rgb')
+    depth_folder = os.path.join(args.datapath, 'depth')
+    bn_folder = os.path.join(args.datapath, 'bn')
+    fdepth_folder = os.path.join(args.datapath, 'fdepth')
+    ate_folder = os.path.join(args.datapath, 'ate')
+
+    rgb_to_average_grayscale(rgb_folder, bn_folder)
+    create_fill_depth(depth_folder, fdepth_folder)
+    atenuated_infrarred(bn_folder, fdepth_folder, ate_folder)
