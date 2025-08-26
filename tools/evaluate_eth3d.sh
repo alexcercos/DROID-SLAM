@@ -68,6 +68,25 @@ evalset=(
     vicon_light_2
 )
 
+TUM_PATH=datasets/TUM-RGBD/$seq
+
+evalset_tum=(
+    rgbd_dataset_freiburg1_360
+    rgbd_dataset_freiburg1_desk
+    rgbd_dataset_freiburg1_desk2
+    rgbd_dataset_freiburg1_floor
+    rgbd_dataset_freiburg1_plant
+    rgbd_dataset_freiburg1_room
+    rgbd_dataset_freiburg1_rpy
+    rgbd_dataset_freiburg1_teddy
+    rgbd_dataset_freiburg1_xyz
+)
+
 for seq in ${evalset[@]}; do
     python evaluation_scripts/test_eth3d.py --datapath=$ETH_PATH/$seq --weights=droid.pth --disable_vis --testmode=ate $@
+done
+
+
+for seq in ${evalset_tum[@]}; do
+    python evaluation_scripts/test_eth3d.py --datapath=$TUM_PATH/$seq --weights=droid.pth --disable_vis --testmode=rgb $@
 done
