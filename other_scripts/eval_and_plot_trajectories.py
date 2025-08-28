@@ -81,6 +81,7 @@ if __name__ == '__main__':
     parser.add_argument("--backend_nms", type=int, default=3)
     parser.add_argument("--testmode", default="rgb")
     parser.add_argument("--cam_scale", type=float, default=0.05)
+    parser.add_argument("--start_scale", type=float, default=0.02)
 
     args = parser.parse_args()
 
@@ -164,7 +165,17 @@ if __name__ == '__main__':
         cam_actor.translate(pos)
         geometries.append(cam_actor)
     
-    #TODO mark start
+    if args.start_scale>0.0: #Mark starts
+        radius = args.start_scale
+        sim_sphere = o3d.geometry.TriangleMesh.create_sphere(radius=radius)
+        sim_sphere.paint_uniform_color([1, 0.5, 0.5])
+        sim_sphere.translate(traj_est.positions_xyz[0])
+        geometries.append(sim_sphere)
+
+        re_sphere = o3d.geometry.TriangleMesh.create_sphere(radius=radius)
+        re_sphere.paint_uniform_color([0.5, 1.0, 0.5])
+        re_sphere.translate(traj_ref.positions_xyz[0])
+        geometries.append(re_sphere)
 
     visualize_trajectories([traj_est.positions_xyz, traj_ref.positions_xyz], [[1,0,0],[0,1,0]], geometries)
 

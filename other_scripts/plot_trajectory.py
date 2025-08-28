@@ -41,6 +41,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--datapath")
     parser.add_argument("--cam_scale", type=float, default=0.05)
+    parser.add_argument("--start_scale", type=float, default=0.02)
 
     args = parser.parse_args()
 
@@ -61,5 +62,12 @@ if __name__ == '__main__':
         cam_actor.translate(pos)
         geometries.append(cam_actor)
     
+    if args.start_scale>0.0: #Mark start
+        radius = args.start_scale
+        re_sphere = o3d.geometry.TriangleMesh.create_sphere(radius=radius)
+        re_sphere.paint_uniform_color([0.5, 1.0, 0.5])
+        re_sphere.translate(traj_ref.positions_xyz[0])
+        geometries.append(re_sphere)
+
     visualize_trajectories([traj_ref.positions_xyz], [[0,1,0]], geometries)
 
