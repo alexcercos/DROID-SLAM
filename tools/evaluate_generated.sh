@@ -17,5 +17,5 @@ evalset=(
 )
 
 for seq in ${evalset[@]}; do
-    python evaluation_scripts/test_eth3d.py --datapath=$GEN_PATH/$seq --weights=droid.pth --disable_vis --testmode=rgb99-0.05 $@
+    python evaluation_scripts/test_eth3d.py --datapath=$GEN_PATH/$seq --weights=droid.pth --disable_vis --testmode=ir99-0.05 #--no_use_depth
 done
