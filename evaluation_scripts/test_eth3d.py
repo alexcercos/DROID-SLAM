@@ -122,7 +122,9 @@ if __name__ == '__main__':
 
     torch.multiprocessing.set_start_method('spawn')
 
-    print("Running evaluation on {} MODE= {} ({}, {})".format(args.datapath, args.testmode, imagefolder, depthfolder))
+    test_folders = f"({imagefolder}"+(")" if args.no_use_depth else f", {depthfolder})")
+
+    print("Running evaluation on {} MODE= {}".format(args.datapath, test_folders))
     print(args)
 
     # this can usually be set to 2-3 except for "camera_shake" scenes
