@@ -56,7 +56,7 @@ evalset=(
     sofa_1
     sofa_2
     sofa_3
-    sofa_4
+#    sofa_4
     # sofa_dark_1
     # sofa_dark_2
     # sofa_dark_3
@@ -82,13 +82,13 @@ evalset_tum=(
     rgbd_dataset_freiburg1_xyz
 )
 
-test_mode=bn
+test_mode=depth
 
 for seq in ${evalset[@]}; do
-    python evaluation_scripts/test_eth3d.py --datapath=$ETH_PATH/$seq --weights=droid.pth --disable_vis --testmode=$test_mode --no_use_depth
+    python evaluation_scripts/test_eth3d.py --datapath=$ETH_PATH/$seq --weights=droid.pth --disable_vis --testmode=$test_mode #--no_use_depth
 done
 
 
 for seq in ${evalset_tum[@]}; do
-    python evaluation_scripts/test_eth3d.py --datapath=$TUM_PATH/$seq --weights=droid.pth --disable_vis --testmode=$test_mode --no_use_depth
+    python evaluation_scripts/test_eth3d.py --datapath=$TUM_PATH/$seq --weights=droid.pth --disable_vis --testmode=$test_mode #--no_use_depth
 done
