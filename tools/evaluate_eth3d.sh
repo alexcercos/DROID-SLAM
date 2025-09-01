@@ -85,10 +85,10 @@ evalset_tum=(
 test_mode=depth
 
 for seq in ${evalset[@]}; do
-    python evaluation_scripts/test_eth3d.py --datapath=$ETH_PATH/$seq --weights=droid.pth --disable_vis --testmode=$test_mode #--no_use_depth
+    python evaluation_scripts/test_eth3d.py --datapath=$ETH_PATH/$seq --weights=droid.pth --disable_vis --testmode=$test_mode --no_use_depth
 done
 
 
 for seq in ${evalset_tum[@]}; do
-    python evaluation_scripts/test_eth3d.py --datapath=$TUM_PATH/$seq --weights=droid.pth --disable_vis --testmode=$test_mode #--no_use_depth
+    python evaluation_scripts/test_eth3d.py --datapath=$TUM_PATH/$seq --weights=droid.pth --disable_vis --testmode=$test_mode --no_use_depth
 done

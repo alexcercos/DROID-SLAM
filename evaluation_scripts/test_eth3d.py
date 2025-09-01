@@ -180,3 +180,13 @@ if __name__ == '__main__':
 
     print(result)
 
+    if not os.path.exists(os.path.join(args.datapath, "evaluations")):
+        os.makedirs(os.path.join(args.datapath, "evaluations"))
+
+    fname = f"evaluations/{args.testmode}"
+    if args.no_use_depth: fname += "_nd.txt"
+
+    with open(os.path.join(args.datapath, fname),"w") as file:
+        file.write("# timestamp tx ty tz qx qy qz qw\n")
+        for pos,quat,ts in zip(traj_est.positions_xyz,traj_est.orientations_quat_wxyz,traj_est.timestamps):
+            file.write(f"{ts} {pos[0]} {pos[1]} {pos[2]} {quat[1]} {quat[2]} {quat[3]} {quat[0]}\n")
