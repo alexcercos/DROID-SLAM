@@ -55,6 +55,11 @@ class Droid:
         state_dict["update.delta.2.weight"] = state_dict["update.delta.2.weight"][:2]
         state_dict["update.delta.2.bias"] = state_dict["update.delta.2.bias"][:2]
 
+        # print("WEIGHT NAMES")
+        # print("-------------------")
+        # print(list(state_dict.keys()))
+        # print("-------------------")
+
         self.net.load_state_dict(state_dict)
         self.net.to("cuda:0").eval()
 
