@@ -1,16 +1,21 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import cv2
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--datapath", type=str, help="path to image directory")
+args = parser.parse_args()
 
 # Change this to your actual reconstruction path
-reconstruction_path = "cables_2" #input("Reconstruction: ")
+reconstruction_path = args.datapath
 
 # Load the files
-tstamps = np.load(f"reconstructions/{reconstruction_path}/tstamps.npy")
-images = np.load(f"reconstructions/{reconstruction_path}/images.npy")
-disps = np.load(f"reconstructions/{reconstruction_path}/disps.npy")
-poses = np.load(f"reconstructions/{reconstruction_path}/poses.npy")
-intrinsics = np.load(f"reconstructions/{reconstruction_path}/intrinsics.npy")
+tstamps = np.load(f"{reconstruction_path}/tstamps.npy")
+images = np.load(f"{reconstruction_path}/images.npy")
+disps = np.load(f"{reconstruction_path}/disps.npy")
+poses = np.load(f"{reconstruction_path}/poses.npy")
+intrinsics = np.load(f"{reconstruction_path}/intrinsics.npy")
 
 num_frames = images.shape[0]
 index = 0
@@ -29,7 +34,10 @@ while True:
     # Show combined image
     cv2.imshow("Image (Left) + Disparity (Right)", combined)
 
-    key = cv2.waitKey(0) & 0xFF
+    key = cv2.waitKey(1) & 0xFF
+
+    if cv2.getWindowProperty("Image (Left) + Disparity (Right)", cv2.WND_PROP_VISIBLE) < 1:
+        break
 
     if key == ord('d') or key == 83:  # Right arrow or 'd'
         index = (index + 1) % num_frames
