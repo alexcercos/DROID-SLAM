@@ -94,17 +94,17 @@ evalset_gen=(
     medieval_seaport_3
     medieval_seaport_internal
     slykdrako_room
-    # bathroom
+    bathroom
 )
 
-# for seq in ${evalset[@]}; do
-#     python evaluation_scripts/extract_longitude.py --datapath=$ETH_PATH/$seq
-# done
+for seq in ${evalset[@]}; do
+    python evaluation_scripts/extract_longitude.py --datapath=$ETH_PATH/$seq
+done
 
 
-# for seq in ${evalset_tum[@]}; do
-#     python evaluation_scripts/extract_longitude.py --datapath=$TUM_PATH/$seq
-# done
+for seq in ${evalset_tum[@]}; do
+    python evaluation_scripts/extract_longitude.py --datapath=$TUM_PATH/$seq
+done
 
 for seq in ${evalset_gen[@]}; do
     python evaluation_scripts/extract_longitude.py --datapath=$GEN_PATH/$seq
