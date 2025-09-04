@@ -10,15 +10,16 @@ import open3d as o3d
 
 from visualization import create_camera_actor
 from lietorch import SE3
+import numpy as np
 
 from cuda_timer import CudaTimer
 
-def view_reconstruction(filename: str, filter_thresh = 0.005, filter_count=2):
-    reconstruction_blob = torch.load(filename)
-    images = reconstruction_blob["images"].cuda()[...,::2,::2]
-    disps = reconstruction_blob["disps"].cuda()[...,::2,::2]
-    poses = reconstruction_blob["poses"].cuda()
-    intrinsics = 4 * reconstruction_blob["intrinsics"].cuda()
+def view_reconstruction(datapath: str, filter_thresh=0.005, filter_count=2):
+    # Load .npy files and convert to torch tensors
+    images = torch.from_numpy(np.load(f"{datapath}/images.npy")).cuda()[..., ::2, ::2]
+    disps = torch.from_numpy(np.load(f"{datapath}/disps.npy")).cuda()[..., ::2, ::2]
+    poses = torch.from_numpy(np.load(f"{datapath}/poses.npy")).cuda()
+    intrinsics = 4 * torch.from_numpy(np.load(f"{datapath}/intrinsics.npy")).cuda()
 
     disps = disps.contiguous()
 
@@ -61,9 +62,9 @@ def view_reconstruction(filename: str, filter_thresh = 0.005, filter_count=2):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("filename", type=str, help="path to image directory")
+    parser.add_argument("datapath", type=str, help="path to image directory")
     parser.add_argument("--filter_threshold", type=float, default=0.005)
     parser.add_argument("--filter_count", type=int, default=3)
     args = parser.parse_args()
 
-    view_reconstruction(args.filename, args.filter_threshold, args.filter_count)
+    view_reconstruction(args.datapath, args.filter_threshold, args.filter_count)
