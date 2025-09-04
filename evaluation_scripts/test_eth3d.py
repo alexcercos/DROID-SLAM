@@ -108,17 +108,14 @@ if __name__ == '__main__':
     parser.add_argument("--backend_radius", type=int, default=2)
     parser.add_argument("--backend_nms", type=int, default=3)
     parser.add_argument("--testmode", default="rgb")
+    parser.add_argument("--depthmode", default="depth")
     parser.add_argument("--no_use_depth", action="store_true")
     parser.add_argument("--reconstruction_path", help="path to saved reconstruction")
     parser.add_argument("--upsample", action="store_true")
     args = parser.parse_args()
 
-    if args.testmode == "fd":
-        imagefolder = "rgb"
-        depthfolder = "fdepth"
-    else:
-        imagefolder = args.testmode
-        depthfolder = "depth"
+    imagefolder = args.testmode
+    depthfolder = args.depthmode
 
     torch.multiprocessing.set_start_method('spawn')
 
