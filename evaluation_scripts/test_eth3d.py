@@ -142,10 +142,10 @@ if __name__ == '__main__':
         else:
             droid.track(t, image, depth, intrinsics=intrinsics)
     
+    traj_est = droid.terminate(image_stream(args.datapath, use_depth=False, stride=stride))
+
     if args.reconstruction_path is not None:
         save_reconstruction(droid, args.reconstruction_path)
-
-    traj_est = droid.terminate(image_stream(args.datapath, use_depth=False, stride=stride))
 
     ### run evaluation ###
 

@@ -15,8 +15,9 @@ evalset=(
     slykdrako_room
     bathroom
     country_kitchen_slow
+    kitchen_slow
 )
 
 for seq in ${evalset[@]}; do
-    python evaluation_scripts/test_eth3d.py --datapath=$GEN_PATH/$seq --weights=droid.pth --disable_vis --testmode=depth --no_use_depth
+    python evaluation_scripts/test_eth3d.py --datapath=$GEN_PATH/$seq --weights=droid.pth --disable_vis --testmode=depth --depthmode=depth --no_use_depth
 done
