@@ -49,13 +49,22 @@ def train(gpu, args):
 
     N = args.n_frames
     model = DroidNet()
+    model.freeze_layers()
     model.cuda()
     model.train()
 
     model = DDP(model, device_ids=[gpu], find_unused_parameters=False)
 
     if args.ckpt is not None:
-        model.load_state_dict(torch.load(args.ckpt))
+        state_dict = OrderedDict([
+            (k.replace("module.", ""), v) for (k, v) in torch.load(args.ckpt).items()])
+
+        state_dict["update.weight.2.weight"] = state_dict["update.weight.2.weight"][:2]
+        state_dict["update.weight.2.bias"] = state_dict["update.weight.2.bias"][:2]
+        state_dict["update.delta.2.weight"] = state_dict["update.delta.2.weight"][:2]
+        state_dict["update.delta.2.bias"] = state_dict["update.delta.2.bias"][:2]
+
+        model.load_state_dict(state_dict, strict=False)
 
     # fetch dataloader
     db = dataset_factory(['tartan'], datapath=args.datapath, n_frames=args.n_frames, fmin=args.fmin, fmax=args.fmax)

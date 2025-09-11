@@ -150,6 +150,14 @@ class DroidNet(nn.Module):
         self.cnet = BasicEncoder(output_dim=256, norm_fn='none')
         self.update = UpdateModule()
 
+    def freeze_layers(self):
+        for param in self.parameters():
+            param.requires_grad = False
+        
+        # for name, param in self.named_parameters():
+        #     print(name, param.requires_grad)
+
+        #TODO unfreeze top layers
 
     def extract_features(self, images):
         """ run feeature extraction networks """
