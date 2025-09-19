@@ -149,41 +149,46 @@ if __name__ == '__main__':
 
     ### run evaluation ###
 
-    print("#"*20 + " Results...")
+    try: #In case there is no ground truth
 
-    import evo
-    from evo.core.trajectory import PoseTrajectory3D
-    from evo.tools import file_interface
-    from evo.core import sync
-    import evo.main_ape as main_ape
-    from evo.core.metrics import PoseRelation
+        print("#"*20 + " Results...")
 
-    image_path = os.path.join(args.datapath, imagefolder)
-    images_list = sorted(glob.glob(os.path.join(image_path, '*.png')))[::stride]
-    tstamps = [float(x.split('/')[-1][:-4]) for x in images_list]
+        import evo
+        from evo.core.trajectory import PoseTrajectory3D
+        from evo.tools import file_interface
+        from evo.core import sync
+        import evo.main_ape as main_ape
+        from evo.core.metrics import PoseRelation
 
-    traj_est = PoseTrajectory3D(
-        positions_xyz=traj_est[:,:3],
-        orientations_quat_wxyz=traj_est[:,3:],
-        timestamps=np.array(tstamps))
+        image_path = os.path.join(args.datapath, imagefolder)
+        images_list = sorted(glob.glob(os.path.join(image_path, '*.png')))[::stride]
+        tstamps = [float(x.split('/')[-1][:-4]) for x in images_list]
 
-    gt_file = os.path.join(args.datapath, 'groundtruth.txt')
-    traj_ref = file_interface.read_tum_trajectory_file(gt_file)
+        traj_est = PoseTrajectory3D(
+            positions_xyz=traj_est[:,:3],
+            orientations_quat_wxyz=traj_est[:,3:],
+            timestamps=np.array(tstamps))
 
-    traj_ref, traj_est = sync.associate_trajectories(traj_ref, traj_est)
+        gt_file = os.path.join(args.datapath, 'groundtruth.txt')
+        traj_ref = file_interface.read_tum_trajectory_file(gt_file)
 
-    result = main_ape.ape(traj_ref, traj_est, est_name='traj', 
-        pose_relation=PoseRelation.translation_part, align=True, correct_scale=True)
+        traj_ref, traj_est = sync.associate_trajectories(traj_ref, traj_est)
 
-    print(result)
+        result = main_ape.ape(traj_ref, traj_est, est_name='traj', 
+            pose_relation=PoseRelation.translation_part, align=True, correct_scale=True)
 
-    if not os.path.exists(os.path.join(args.datapath, "evaluations")):
-        os.makedirs(os.path.join(args.datapath, "evaluations"))
+        print(result)
 
-    fname = f"evaluations/{args.testmode}"
-    if args.no_use_depth: fname += "_nd.txt"
+        if not os.path.exists(os.path.join(args.datapath, "evaluations")):
+            os.makedirs(os.path.join(args.datapath, "evaluations"))
 
-    with open(os.path.join(args.datapath, fname),"w") as file:
-        file.write("# timestamp tx ty tz qx qy qz qw\n")
-        for pos,quat,ts in zip(traj_est.positions_xyz,traj_est.orientations_quat_wxyz,traj_est.timestamps):
-            file.write(f"{ts} {pos[0]} {pos[1]} {pos[2]} {quat[1]} {quat[2]} {quat[3]} {quat[0]}\n")
+        fname = f"evaluations/{args.testmode}"
+        if args.no_use_depth: fname += "_nd.txt"
+
+        with open(os.path.join(args.datapath, fname),"w") as file:
+            file.write("# timestamp tx ty tz qx qy qz qw\n")
+            for pos,quat,ts in zip(traj_est.positions_xyz,traj_est.orientations_quat_wxyz,traj_est.timestamps):
+                file.write(f"{ts} {pos[0]} {pos[1]} {pos[2]} {quat[1]} {quat[2]} {quat[3]} {quat[0]}\n")
+
+    except:
+        pass
