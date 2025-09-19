@@ -18,6 +18,22 @@ evalset=(
     kitchen_slow
 )
 
+thresholds=(
+    0
+    10
+    20
+    30
+    40
+    50
+    60
+    70
+    80
+    90
+    100
+)
+
 for seq in ${evalset[@]}; do
-    python evaluation_scripts/test_eth3d.py --datapath=$GEN_PATH/$seq --weights=droid.pth --disable_vis --testmode=depth --depthmode=depth --no_use_depth
+    for th in  ${thresholds[@]}; do
+        python evaluation_scripts/test_threshold.py --datapath=$GEN_PATH/$seq --weights=droid.pth --disable_vis --testmode=ir --depthmode=zdepth --threshold=$th
+    done
 done

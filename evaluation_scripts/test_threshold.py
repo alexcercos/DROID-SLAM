@@ -137,7 +137,7 @@ if __name__ == '__main__':
     stride = 1
 
     tstamps = []
-    for (t, image, depth, intrinsics) in tqdm(image_stream(args.datapath, use_depth=True, stride=stride, threshold=args.threshold)):
+    for (t, image, depth, intrinsics) in tqdm(image_stream(args.datapath, use_depth=True, stride=stride, threshold=round(args.threshold*256/100.0))):
         if not args.disable_vis:
             # show_image(image[0])
             show_image_depth(depth)
@@ -189,8 +189,9 @@ if __name__ == '__main__':
     if not os.path.exists(os.path.join(args.datapath, "evaluations")):
         os.makedirs(os.path.join(args.datapath, "evaluations"))
 
-    fname = f"evaluations/{args.testmode}"
-    if args.no_use_depth: fname += "_nd.txt"
+    fname = f"evaluations/{args.testmode}_t{args.threshold}"
+    if args.no_use_depth: fname += "_nd"
+    fname+=".txt"
 
     with open(os.path.join(args.datapath, fname),"w") as file:
         file.write("# timestamp tx ty tz qx qy qz qw\n")
