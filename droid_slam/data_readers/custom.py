@@ -70,70 +70,71 @@ class CustomDataset(RGBDDataset):
         depth[depth==np.inf] = 1.0
         return depth
 
+#Possibly unused (Tartanair equivalents?
 
-class CustomDatasetStream(RGBDStream):
-    def __init__(self, datapath, **kwargs):
-        super(CustomDatasetStream, self).__init__(datapath=datapath, **kwargs)
+# class CustomDatasetStream(RGBDStream):
+#     def __init__(self, datapath, **kwargs):
+#         super(CustomDatasetStream, self).__init__(datapath=datapath, **kwargs)
 
-    def _build_dataset_index(self):
-        """ build list of images, poses, depths, and intrinsics """
-        self.root = 'datasets/CustomDataset'
+#     def _build_dataset_index(self):
+#         """ build list of images, poses, depths, and intrinsics """
+#         self.root = 'datasets/CustomDataset'
 
-        scene = osp.join(self.root, self.datapath)
-        image_glob = osp.join(scene, 'image_left/*.png') #TODO modify
-        images = sorted(glob.glob(image_glob))
+#         scene = osp.join(self.root, self.datapath)
+#         image_glob = osp.join(scene, 'image_left/*.png') #TODO modify
+#         images = sorted(glob.glob(image_glob))
 
-        poses = np.loadtxt(osp.join(scene, 'pose_left.txt'), delimiter=' ') #TODO modify
-        poses = poses[:, [0, 1, 2, 6, 3, 4, 5]] # --> In theory, XYZ WXYZ
+#         poses = np.loadtxt(osp.join(scene, 'pose_left.txt'), delimiter=' ') #TODO modify
+#         poses = poses[:, [0, 1, 2, 6, 3, 4, 5]] # --> In theory, XYZ WXYZ
 
-        poses = SE3(torch.as_tensor(poses))
-        poses = poses[[0]].inv() * poses
-        poses = poses.data.cpu().numpy()
+#         poses = SE3(torch.as_tensor(poses))
+#         poses = poses[[0]].inv() * poses
+#         poses = poses.data.cpu().numpy()
 
-        intrinsic = self.calib_read(self.datapath)
-        intrinsics = np.tile(intrinsic[None], (len(images), 1))
+#         intrinsic = self.calib_read(self.datapath)
+#         intrinsics = np.tile(intrinsic[None], (len(images), 1))
 
-        self.images = images[::int(self.frame_rate)]
-        self.poses = poses[::int(self.frame_rate)]
-        self.intrinsics = intrinsics[::int(self.frame_rate)]
+#         self.images = images[::int(self.frame_rate)]
+#         self.poses = poses[::int(self.frame_rate)]
+#         self.intrinsics = intrinsics[::int(self.frame_rate)]
 
-    @staticmethod
-    def calib_read(datapath):
-        return np.array([320.0, 320.0, 320.0, 240.0]) #TODO modify
+#     @staticmethod
+#     def calib_read(datapath):
+#         return np.array([320.0, 320.0, 320.0, 240.0]) #TODO modify
 
-    @staticmethod
-    def image_read(image_file):
-        return cv2.imread(image_file)
+#     @staticmethod
+#     def image_read(image_file):
+#         return cv2.imread(image_file)
 
 
-class CustomDatasetTestStream(RGBDStream):
-    def __init__(self, datapath, **kwargs):
-        super(CustomDatasetTestStream, self).__init__(datapath=datapath, **kwargs)
+# class CustomDatasetTestStream(RGBDStream):
+#     def __init__(self, datapath, **kwargs):
+#         super(CustomDatasetTestStream, self).__init__(datapath=datapath, **kwargs)
 
-    def _build_dataset_index(self):
-        """ build list of images, poses, depths, and intrinsics """
-        self.root = 'datasets/mono'
-        image_glob = osp.join(self.root, self.datapath, '*.png') #TODO modify
-        images = sorted(glob.glob(image_glob))
+#     def _build_dataset_index(self):
+#         """ build list of images, poses, depths, and intrinsics """
+#         self.root = 'datasets/mono'
+#         image_glob = osp.join(self.root, self.datapath, '*.png') #TODO modify
+#         images = sorted(glob.glob(image_glob))
 
-        poses = np.loadtxt(osp.join(self.root, 'mono_gt', self.datapath + '.txt'), delimiter=' ') #TODO modify
-        poses = poses[:, [0, 1, 2, 6, 3, 4, 5]] # --> In theory, XYZ WXYZ
+#         poses = np.loadtxt(osp.join(self.root, 'mono_gt', self.datapath + '.txt'), delimiter=' ') #TODO modify
+#         poses = poses[:, [0, 1, 2, 6, 3, 4, 5]] # --> In theory, XYZ WXYZ
 
-        poses = SE3(torch.as_tensor(poses))
-        poses = poses[[0]].inv() * poses
-        poses = poses.data.cpu().numpy()
+#         poses = SE3(torch.as_tensor(poses))
+#         poses = poses[[0]].inv() * poses
+#         poses = poses.data.cpu().numpy()
 
-        intrinsic = self.calib_read(self.datapath)
-        intrinsics = np.tile(intrinsic[None], (len(images), 1))
+#         intrinsic = self.calib_read(self.datapath)
+#         intrinsics = np.tile(intrinsic[None], (len(images), 1))
 
-        self.images = images[::int(self.frame_rate)]
-        self.poses = poses[::int(self.frame_rate)]
-        self.intrinsics = intrinsics[::int(self.frame_rate)]
+#         self.images = images[::int(self.frame_rate)]
+#         self.poses = poses[::int(self.frame_rate)]
+#         self.intrinsics = intrinsics[::int(self.frame_rate)]
 
-    @staticmethod
-    def calib_read(datapath):
-        return np.array([320.0, 320.0, 320.0, 240.0]) #TODO modify
+#     @staticmethod
+#     def calib_read(datapath):
+#         return np.array([320.0, 320.0, 320.0, 240.0]) #TODO modify
 
-    @staticmethod
-    def image_read(image_file):
-        return cv2.imread(image_file)
+#     @staticmethod
+#     def image_read(image_file):
+#         return cv2.imread(image_file)
