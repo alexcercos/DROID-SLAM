@@ -10,6 +10,9 @@ from .stream import ImageStream
 from .stream import StereoStream
 from .stream import RGBDStream
 
+#Custom dataset
+from .custom import CustomDataset
+
 # streaming datasets for inference
 from .tartan import TartanAirStream
 from .tartan import TartanAirTestStream
@@ -19,7 +22,7 @@ def dataset_factory(dataset_list, **kwargs):
 
     from torch.utils.data import ConcatDataset
 
-    dataset_map = { 'tartan': (TartanAir, ) }
+    dataset_map = { 'tartan': (TartanAir, ), 'custom_tof': (CustomDataset, ) }
     db_list = []
     for key in dataset_list:
         # cache datasets for faster future loading

@@ -67,7 +67,7 @@ def train(gpu, args):
         model.load_state_dict(state_dict, strict=False)
 
     # fetch dataloader
-    db = dataset_factory(['tartan'], datapath=args.datapath, n_frames=args.n_frames, fmin=args.fmin, fmax=args.fmax)
+    db = dataset_factory(['custom_tof'], datapath=args.datapath, n_frames=args.n_frames, fmin=args.fmin, fmax=args.fmax)
 
     train_sampler = torch.utils.data.distributed.DistributedSampler(
         db, shuffle=True, num_replicas=args.world_size, rank=gpu)
