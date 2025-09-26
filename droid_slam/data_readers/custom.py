@@ -10,41 +10,40 @@ from lietorch import SE3
 from .base import RGBDDataset
 from .stream import RGBDStream
 
-cur_path = osp.dirname(osp.abspath(__file__))
-test_split = osp.join(cur_path, 'tartan_test.txt')
-test_split = open(test_split).read().split()
-
+test_split = ["kitchen_slow", "kitchen_small", "kitchen_table"]
 
 class CustomDataset(RGBDDataset):
 
     # scale depths to balance rot & trans
     DEPTH_SCALE = 5.0
 
-    def __init__(self, mode='training', **kwargs):
+    def __init__(self, mode='training', imgfolder="ir", **kwargs):
         self.mode = mode
         self.n_frames = 2
+        self.imgfolder = imgfolder
         super(CustomDataset, self).__init__(name='CustomDataset', **kwargs)
 
     @staticmethod 
     def is_test_scene(scene):
         # print(scene, any(x in scene for x in test_split))
-        return any(x in scene for x in test_split)
+        return scene in test_split
 
     def _build_dataset(self):
         from tqdm import tqdm
         print("Building CUSTOM dataset")
 
         scene_info = {}
-        scenes = glob.glob(osp.join(self.root, '*/*/*/*'))
+        scenes = glob.glob(osp.join(self.root, '*'))
         for scene in tqdm(sorted(scenes)):
-            images = sorted(glob.glob(osp.join(scene, 'image_left/*.png'))) #TODO modify
+            print(scene)
+            images = sorted(glob.glob(osp.join(scene, f'{self.imgfolder}/*.png')))
             #TODO could add TOF
-            depths = sorted(glob.glob(osp.join(scene, 'depth_left/*.npy'))) #TODO modify (should be ground truth depth)
+            depths = sorted(glob.glob(osp.join(scene, 'gtdepth/*.png')))
             
-            poses = np.loadtxt(osp.join(scene, 'pose_left.txt'), delimiter=' ') #TODO modify
+            poses = np.loadtxt(osp.join(scene, 'groundtruth.txt'), delimiter=' ', skiprows=1)
             poses = poses[:, [0, 1, 2, 6, 3, 4, 5]] # --> In theory, XYZ WXYZ
             poses[:,:3] /= CustomDataset.DEPTH_SCALE
-            intrinsics = [CustomDataset.calib_read()] * len(images)
+            intrinsics = [CustomDataset.calib_read(scene)] * len(images)
 
             # graph of co-visible frames based on flow
             graph = self.build_frame_graph(poses, depths, intrinsics)
@@ -56,18 +55,30 @@ class CustomDataset(RGBDDataset):
         return scene_info
 
     @staticmethod
-    def calib_read():
-        return np.array([320.0, 320.0, 320.0, 240.0]) # TODO from file
+    def calib_read(scene):
+        return np.loadtxt(osp.join(scene, 'calibration.txt'), delimiter=' ', max_rows=1)
 
     @staticmethod
     def image_read(image_file):
-        return cv2.imread(image_file)
+        image = cv2.imread(image_file)
+        h0, w0, _ = image.shape
+        h1 = int(h0 * np.sqrt((384 * 512) / (h0 * w0)))
+        w1 = int(w0 * np.sqrt((384 * 512) / (h0 * w0)))
+        image = cv2.resize(image, (w1, h1))
+        return image
 
     @staticmethod
     def depth_read(depth_file):
-        depth = np.load(depth_file) / CustomDataset.DEPTH_SCALE
+
+        depth = cv2.imread(depth_file, cv2.IMREAD_ANYDEPTH) / 5000.0 / CustomDataset.DEPTH_SCALE
+        h0, w0 = depth.shape
+        h1 = int(h0 * np.sqrt((384 * 512) / (h0 * w0)))
+        w1 = int(w0 * np.sqrt((384 * 512) / (h0 * w0)))
+
+        depth = cv2.resize(depth, (w1, h1))
         depth[depth==np.nan] = 1.0
         depth[depth==np.inf] = 1.0
+        depth[depth < 0.01] = np.mean(depth)
         return depth
 
 #Possibly unused (Tartanair equivalents?
