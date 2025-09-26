@@ -31,18 +31,20 @@ class RGBDDataset(data.Dataset):
             self.aug = RGBDAugmentor(crop_size=crop_size)
 
         # building dataset is expensive, cache so only needs to be performed once
-        cur_path = osp.dirname(osp.abspath(__file__))
-        if not os.path.isdir(osp.join(cur_path, 'cache')):
-            os.mkdir(osp.join(cur_path, 'cache'))
+        # cur_path = osp.dirname(osp.abspath(__file__))
+        # if not os.path.isdir(osp.join(cur_path, 'cache')):
+        #     os.mkdir(osp.join(cur_path, 'cache'))
         
-        cache_path = osp.join(cur_path, 'cache', '{}.pickle'.format(self.name))
+        # cache_path = osp.join(cur_path, 'cache', '{}.pickle'.format(self.name))
 
-        if osp.isfile(cache_path):
-            scene_info = pickle.load(open(cache_path, 'rb'))[0]
-        else:
-            scene_info = self._build_dataset()
-            with open(cache_path, 'wb') as cachefile:
-                pickle.dump((scene_info,), cachefile)
+        # if osp.isfile(cache_path):
+        #     scene_info = pickle.load(open(cache_path, 'rb'))[0]
+        # else:
+        #     scene_info = self._build_dataset()
+        #     with open(cache_path, 'wb') as cachefile:
+        #         pickle.dump((scene_info,), cachefile)
+
+        scene_info = self._build_dataset()
 
         self.scene_info = scene_info
         self._build_dataset_index()

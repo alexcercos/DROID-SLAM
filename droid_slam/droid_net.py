@@ -153,11 +153,59 @@ class DroidNet(nn.Module):
     def freeze_layers(self):
         for param in self.parameters():
             param.requires_grad = False
-        
-        # for name, param in self.named_parameters():
-        #     print(name, param.requires_grad)
+    
+    def print_status(self):
+        for name, param in self.named_parameters():
+            print(name, param.requires_grad)
+    
+    def unfreeze_fnet(self, amount):
+        if amount==0: return
 
-        #TODO unfreeze top layers
+        #unfreeze in order, top to bottom
+
+        if amount>=1:
+            self.fnet.conv2.requires_grad_(True)
+        if amount>=2:
+            self.fnet.layer3.requires_grad_(True)
+        if amount>=3:
+            self.fnet.layer2.requires_grad_(True)
+        if amount>=4:
+            self.fnet.layer1.requires_grad_(True)
+        if amount>=5:
+            self.fnet.conv1.requires_grad_(True)
+
+    def unfreeze_cnet(self, amount):
+        if amount==0: return
+
+        #unfreeze in order, top to bottom
+
+        if amount>=1:
+            self.cnet.conv2.requires_grad_(True)
+        if amount>=2:
+            self.cnet.layer3.requires_grad_(True)
+        if amount>=3:
+            self.cnet.layer2.requires_grad_(True)
+        if amount>=4:
+            self.cnet.layer1.requires_grad_(True)
+        if amount>=5:
+            self.cnet.conv1.requires_grad_(True)
+        
+        #se podria hacer mas preciso, cada layer (residual) tiene 2 sublayers de 2 conv
+
+    def unfreeze_update(self, param_list):
+        
+        if "agg" in param_list:
+            self.update.agg.requires_grad_(True)
+        if "gru" in param_list:
+            self.update.gru.requires_grad_(True)
+        if "weight" in param_list:
+            self.update.weight.requires_grad_(True)
+        if "delta" in param_list:
+            self.update.delta.requires_grad_(True)
+        if "corr" in param_list:
+            self.update.corr_encoder.requires_grad_(True)
+        if "flow" in param_list:
+            self.update.flow_encoder.requires_grad_(True)
 
     def extract_features(self, images):
         """ run feeature extraction networks """
@@ -177,6 +225,7 @@ class DroidNet(nn.Module):
         return fmaps, net, inp
 
 
+    #Esto habria que modificarlo si utiliza depths
     def forward(self, Gs, images, disps, intrinsics, graph=None, num_steps=12, fixedp=2):
         """ Estimates SE3 or Sim3 between pair of frames """
 

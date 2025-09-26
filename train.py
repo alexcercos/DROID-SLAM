@@ -50,6 +50,13 @@ def train(gpu, args):
     N = args.n_frames
     model = DroidNet()
     model.freeze_layers()
+
+    model.unfreeze_cnet(args.unfreeze_cnet)
+    model.unfreeze_fnet(args.unfreeze_fnet)
+    model.unfreeze_update(args.unfreeze_update.split(","))
+
+    model.print_status() #To verify
+
     model.cuda()
     model.train()
 
@@ -67,7 +74,9 @@ def train(gpu, args):
         model.load_state_dict(state_dict, strict=False)
 
     # fetch dataloader
-    db = dataset_factory(['custom_tof'], datapath=args.datapath, n_frames=args.n_frames, fmin=args.fmin, fmax=args.fmax)
+    db = dataset_factory(['custom_tof'], datapath=args.datapath, 
+            n_frames=args.n_frames, fmin=args.fmin, fmax=args.fmax,
+            imgfolder=args.imgtype)
 
     train_sampler = torch.utils.data.distributed.DistributedSampler(
         db, shuffle=True, num_replicas=args.world_size, rank=gpu)
@@ -86,9 +95,7 @@ def train(gpu, args):
     while should_keep_training:
         for i_batch, item in enumerate(train_loader):
             optimizer.zero_grad()
-
             images, poses, disps, intrinsics = [x.to('cuda') for x in item]
-
             # convert poses w2c -> c2w
             Ps = SE3(poses).inv()
             Gs = SE3.IdentityLike(Ps)
@@ -140,7 +147,7 @@ def train(gpu, args):
             if gpu == 0:
                 logger.push(metrics)
 
-            if total_steps % 10000 == 0 and gpu == 0:
+            if total_steps % 1000 == 0 and gpu == 0:
                 PATH = 'checkpoints/%s_%06d.pth' % (args.name, total_steps)
                 torch.save(model.state_dict(), PATH)
 
@@ -156,13 +163,12 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--name', default='bla', help='name your experiment')
     parser.add_argument('--ckpt', help='checkpoint to restore')
-    parser.add_argument('--datasets', nargs='+', help='lists of datasets for training')
     parser.add_argument('--datapath', default='datasets/TartanAir', help="path to dataset directory")
-    parser.add_argument('--gpus', type=int, default=4)
+    parser.add_argument('--gpus', type=int, default=1)
 
     parser.add_argument('--batch', type=int, default=1)
     parser.add_argument('--iters', type=int, default=15)
-    parser.add_argument('--steps', type=int, default=250000)
+    parser.add_argument('--steps', type=int, default=10000)
     parser.add_argument('--lr', type=float, default=0.00025)
     parser.add_argument('--clip', type=float, default=2.5)
     parser.add_argument('--n_frames', type=int, default=7)
@@ -177,6 +183,11 @@ if __name__ == '__main__':
     parser.add_argument('--scale', action='store_true')
     parser.add_argument('--edges', type=int, default=24)
     parser.add_argument('--restart_prob', type=float, default=0.2)
+
+    parser.add_argument('--imgtype',default='ir')
+    parser.add_argument('--unfreeze_cnet',type=int,default=0)
+    parser.add_argument('--unfreeze_fnet',type=int,default=0)
+    parser.add_argument('--unfreeze_update',default="") #SEPARATED BY COMMA
 
     args = parser.parse_args()
 
