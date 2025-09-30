@@ -33,12 +33,24 @@ def show_image(image):
 def image_stream(datapath, use_depth=False, stride=1):
     """ image generator """
 
-    fx, fy, cx, cy = np.loadtxt(os.path.join(datapath, 'calibration.txt')).tolist()
+    calib = np.loadtxt(os.path.join(datapath, 'calibration.txt')).tolist()
+    fx, fy, cx, cy = calib[:4]
+
+    K = np.eye(3)
+    K[0,0] = fx
+    K[0,2] = cx
+    K[1,1] = fy
+    K[1,2] = cy
+    
     image_list = sorted(glob.glob(os.path.join(datapath, imagefolder, '*.png')))[::stride]
     depth_list = sorted(glob.glob(os.path.join(datapath, depthfolder, '*.png')))[::stride]
 
     for t, (image_file, depth_file) in enumerate(zip(image_list, depth_list)):
         image = cv2.imread(image_file)
+        
+        if len(calib) > 4:
+            image = cv2.undistort(image, K, np.array(calib[4:]))
+
         depth = cv2.imread(depth_file, cv2.IMREAD_ANYDEPTH) / 5000.0
 
         h0, w0, _ = image.shape
@@ -108,7 +120,7 @@ if __name__ == '__main__':
     parser.add_argument("--backend_radius", type=int, default=2)
     parser.add_argument("--backend_nms", type=int, default=3)
     parser.add_argument("--testmode", default="rgb")
-    parser.add_argument("--depthmode", default="depth")
+    parser.add_argument("--depthmode", default="zdepth")
     parser.add_argument("--no_use_depth", action="store_true")
     parser.add_argument("--reconstruction_path", help="path to saved reconstruction")
     parser.add_argument("--upsample", action="store_true")
