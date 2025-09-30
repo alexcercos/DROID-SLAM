@@ -16,5 +16,5 @@ CUDA_VISIBLE_DEVICES=1,2 python train.py --name=test4 --ckpt=droid.pth --datapat
 #5: Unfreeze 2 layer of fnet and cnet, weight and delta update
 CUDA_VISIBLE_DEVICES=1,2 python train.py --name=test5 --ckpt=droid.pth --datapath=datasets/Generated --unfreeze_cnet=2 --unfreeze_fnet=2 --unfreeze_update=weight,delta
 
-#6: Unfreeze 3 layers of fnet and cnet, and all of update
+#6: Unfreeze 3 layers of fnet and cnet, and all of update (FAILED)
 CUDA_VISIBLE_DEVICES=1,2 python train.py --name=test6 --ckpt=droid.pth --datapath=datasets/Generated --unfreeze_cnet=3 --unfreeze_fnet=3 --unfreeze_update=agg,gru,weight,delta,corr,flow

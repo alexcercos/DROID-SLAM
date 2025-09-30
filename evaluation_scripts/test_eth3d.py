@@ -17,7 +17,7 @@ from droid import Droid
 import matplotlib.pyplot as plt
 
 imagefolder = "rgb"
-depthfolder = "depth"
+depthfolder = "zdepth"
 
 def show_image_depth(image):
     image = image.cpu().numpy()
