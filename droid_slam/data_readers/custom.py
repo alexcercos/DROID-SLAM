@@ -61,21 +61,21 @@ class CustomDataset(RGBDDataset):
     @staticmethod
     def image_read(image_file):
         image = cv2.imread(image_file)
-        h0, w0, _ = image.shape
-        h1 = int(h0 * np.sqrt((384 * 512) / (h0 * w0)))
-        w1 = int(w0 * np.sqrt((384 * 512) / (h0 * w0)))
-        image = cv2.resize(image, (w1, h1))
+#        h0, w0, _ = image.shape
+#        h1 = int(h0 * np.sqrt((384 * 512) / (h0 * w0)))
+#        w1 = int(w0 * np.sqrt((384 * 512) / (h0 * w0)))
+        image = cv2.resize(image, (800, 800))
         return image
 
     @staticmethod
     def depth_read(depth_file):
 
         depth = cv2.imread(depth_file, cv2.IMREAD_ANYDEPTH) / 5000.0 / CustomDataset.DEPTH_SCALE
-        h0, w0 = depth.shape
-        h1 = int(h0 * np.sqrt((384 * 512) / (h0 * w0)))
-        w1 = int(w0 * np.sqrt((384 * 512) / (h0 * w0)))
+#        h0, w0 = depth.shape
+#        h1 = int(h0 * np.sqrt((384 * 512) / (h0 * w0)))
+#        w1 = int(w0 * np.sqrt((384 * 512) / (h0 * w0)))
 
-        depth = cv2.resize(depth, (w1, h1))
+        depth = cv2.resize(depth, (800, 800))
         depth[depth==np.nan] = 1.0
         depth[depth==np.inf] = 1.0
         depth[depth < 0.01] = np.mean(depth)

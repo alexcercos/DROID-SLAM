@@ -60,7 +60,9 @@ class TartanAir(RGBDDataset):
 
     @staticmethod
     def image_read(image_file):
-        return cv2.imread(image_file)
+        img = cv2.imread(image_file)
+        rc = img[:,:,2]
+        return cv2.merge([rc,rc,rc])
 
     @staticmethod
     def depth_read(depth_file):

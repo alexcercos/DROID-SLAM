@@ -17,7 +17,7 @@ from droid import Droid
 import matplotlib.pyplot as plt
 
 imagefolder = "rgb"
-depthfolder = "zdepth"
+depthfolder = "depth"
 
 def show_image_depth(image):
     image = image.cpu().numpy()
@@ -120,7 +120,7 @@ if __name__ == '__main__':
     parser.add_argument("--backend_radius", type=int, default=2)
     parser.add_argument("--backend_nms", type=int, default=3)
     parser.add_argument("--testmode", default="rgb")
-    parser.add_argument("--depthmode", default="zdepth")
+    parser.add_argument("--depthmode", default="depth")
     parser.add_argument("--no_use_depth", action="store_true")
     parser.add_argument("--reconstruction_path", help="path to saved reconstruction")
     parser.add_argument("--upsample", action="store_true")
@@ -203,4 +203,12 @@ if __name__ == '__main__':
                 file.write(f"{ts} {pos[0]} {pos[1]} {pos[2]} {quat[1]} {quat[2]} {quat[3]} {quat[0]}\n")
 
     except:
-        pass
+        fname = f"evaluations/{args.testmode}_{args.depthmode}"
+        if args.no_use_depth: fname += "_nd"
+        fname+=".txt"
+
+        with open(os.path.join(args.datapath, fname),"w") as file:
+            file.write("# timestamp tx ty tz qx qy qz qw\n")
+            for pos,quat,ts in zip(traj_est.positions_xyz,traj_est.orientations_quat_wxyz,traj_est.timestamps):
+                file.write(f"{ts} {pos[0]} {pos[1]} {pos[2]} {quat[1]} {quat[2]} {quat[3]} {quat[0]}\n")
+    

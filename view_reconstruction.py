@@ -14,7 +14,7 @@ import numpy as np
 
 from cuda_timer import CudaTimer
 
-def view_reconstruction(datapath: str, filter_thresh=0.005, filter_count=2):
+def view_reconstruction(datapath: str, filter_thresh=0.005, filter_count=2, cam_scale=0.05):
     # Load .npy files and convert to torch tensors
     images = torch.from_numpy(np.load(f"{datapath}/images.npy")).cuda()[..., ::2, ::2]
     disps = torch.from_numpy(np.load(f"{datapath}/disps.npy")).cuda()[..., ::2, ::2]
@@ -52,7 +52,7 @@ def view_reconstruction(datapath: str, filter_thresh=0.005, filter_count=2):
 
     ### add camera actor ###
     for i in range(len(poses)):
-        cam_actor = create_camera_actor(False)
+        cam_actor = create_camera_actor(False, cam_scale)
         cam_actor.transform(pose_mats[i])
         vis.add_geometry(cam_actor)
 
@@ -65,6 +65,7 @@ if __name__ == '__main__':
     parser.add_argument("datapath", type=str, help="path to image directory")
     parser.add_argument("--filter_threshold", type=float, default=0.005)
     parser.add_argument("--filter_count", type=int, default=3)
+    parser.add_argument("--cam_scale", type=float, default=0.05)
     args = parser.parse_args()
 
-    view_reconstruction(args.datapath, args.filter_threshold, args.filter_count)
+    view_reconstruction(args.datapath, args.filter_threshold, args.filter_count, args.cam_scale)
