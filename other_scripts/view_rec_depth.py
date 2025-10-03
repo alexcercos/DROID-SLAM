@@ -20,12 +20,15 @@ intrinsics = np.load(f"{reconstruction_path}/intrinsics.npy")
 num_frames = images.shape[0]
 index = 0
 
+norm_max = 10
+
 while True:
     img = images[index].transpose(1, 2, 0).copy()  # (H, W, 3)
     disp = disps[index]
 
     # Normalize disparity for display
-    disp_norm = np.clip(disp, 0, 10) / 10.0 * 255 #cv2.normalize(disp, None, 0, 255, cv2.NORM_MINMAX)
+    disp_norm = np.clip(disp, 0, norm_max) / norm_max * 255 #cv2.normalize(disp, None, 0, 255, cv2.NORM_MINMAX)
+    
     disp_color = cv2.applyColorMap(disp_norm.astype(np.uint8), cv2.COLORMAP_PLASMA)
 
     # Concatenate image and disparity horizontally
@@ -41,8 +44,16 @@ while True:
 
     if key == ord('d') or key == 83:  # Right arrow or 'd'
         index = (index + 1) % num_frames
+        print(f"Index {index}/{num_frames} ({norm_max:.2f})",end="\r")
     elif key == ord('a') or key == 81:  # Left arrow or 'a'
         index = (index - 1) % num_frames
+        print(f"Index {index}/{num_frames} ({norm_max:.2f})",end="\r")
+    elif key == ord('z'):
+        norm_max*=1.1
+        print(f"Index {index}/{num_frames} ({norm_max:.2f})",end="\r")
+    elif key == ord('x'):
+        norm_max/=1.1
+        print(f"Index {index}/{num_frames} ({norm_max:.2f})",end="\r")
     elif key == ord('q') or key == 27:  # 'q' or Esc
         break
 
