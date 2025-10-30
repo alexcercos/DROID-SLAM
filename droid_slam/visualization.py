@@ -10,6 +10,8 @@ import open3d as o3d
 from lietorch import SE3
 import geom.projective_ops as pops
 
+import os
+
 o3d.utility.set_verbosity_level(o3d.utility.VerbosityLevel.Error)
 
 CAM_POINTS = np.array([
@@ -64,6 +66,21 @@ def droid_visualization(video, device="cuda:0"):
     droid_visualization.ix = 0
 
     droid_visualization.filter_thresh = 0.005
+
+    save_frames = False
+
+    if save_frames:
+        os.makedirs("frames", exist_ok=True)
+        frame_idx = {'count': 0}
+
+    state = {
+        'capturing': False,
+    }
+
+    def toggle_rotation(vis):
+        state['capturing'] = not state['capturing']
+        print(f"{'Started' if state['capturing'] else 'Stopped'} capturing.")
+        return False
 
     def increase_filter(vis):
         droid_visualization.filter_thresh *= 2
@@ -141,6 +158,14 @@ def droid_visualization(video, device="cuda:0"):
 
             droid_visualization.ix += 1
             vis.poll_events()
+
+            if save_frames and state['capturing']:
+                frame_idx['count'] += 1
+                fname = os.path.join("frames", f"frame_{frame_idx['count']:06d}.png")
+                vis.capture_screen_image(fname, do_render=True)
+                print(f"[Saved] {fname}")
+
+
             vis.update_renderer()
 
     ### create Open3D visualization ###
@@ -148,6 +173,7 @@ def droid_visualization(video, device="cuda:0"):
     vis.register_animation_callback(animation_callback)
     vis.register_key_callback(ord("S"), increase_filter)
     vis.register_key_callback(ord("A"), decrease_filter)
+    vis.register_key_callback(ord('R'), toggle_rotation)
 
     vis.create_window(height=540, width=960)
     vis.get_render_option().load_from_json("misc/renderoption.json")
