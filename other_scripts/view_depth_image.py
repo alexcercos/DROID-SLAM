@@ -5,19 +5,29 @@ import argparse
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--imgpath", type=str, help="path to image directory")
+parser.add_argument("--thres", type=float, default=0.0)
+
 args = parser.parse_args()
 
 img = cv2.imread(args.imgpath, cv2.IMREAD_ANYDEPTH)
 img = cv2.merge([img,img,img])
 norm_max = 10
 
+threshold = args.thres
+
 while True:
 
     # Normalize disparity for display
     disp_norm = np.clip(np.where(img>0,1.0 / (img / 5000.0), img), 0, norm_max) / norm_max * 255 #cv2.normalize(disp, None, 0, 255, cv2.NORM_MINMAX)
 
-    disp_color = cv2.applyColorMap(disp_norm.astype(np.uint8), cv2.COLORMAP_PLASMA)
 
+    if threshold>0.0:
+        confidence = cv2.imread(args.imgpath.replace("zdepth","ir"))[:, :, 0]
+        mask = confidence >= round(threshold*256)
+        disp_norm[~mask] = 0.0
+
+    disp_color = cv2.applyColorMap(disp_norm.astype(np.uint8), cv2.COLORMAP_JET)
+    
     img2 = img/255.0
 
     # Concatenate image and disparity horizontally
@@ -37,6 +47,8 @@ while True:
     elif key == ord('x'):
         norm_max/=1.1
         print(f"({norm_max:.2f})",end="\r")
+    elif key == ord('s'):
+        cv2.imwrite("SAVED_DEPTH.png", disp_color)
     elif key == ord('q') or key == 27:  # 'q' or Esc
         break
 

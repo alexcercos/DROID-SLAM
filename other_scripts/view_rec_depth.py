@@ -29,7 +29,7 @@ while True:
     # Normalize disparity for display
     disp_norm = np.clip(disp, 0, norm_max) / norm_max * 255 #cv2.normalize(disp, None, 0, 255, cv2.NORM_MINMAX)
     
-    disp_color = cv2.applyColorMap(disp_norm.astype(np.uint8), cv2.COLORMAP_PLASMA)
+    disp_color = cv2.applyColorMap(disp_norm.astype(np.uint8), cv2.COLORMAP_JET)
 
     # Concatenate image and disparity horizontally
     combined = np.hstack((img, disp_color))
@@ -54,6 +54,8 @@ while True:
     elif key == ord('x'):
         norm_max/=1.1
         print(f"Index {index}/{num_frames} ({norm_max:.2f})",end="\r")
+    elif key == ord('s'):
+        cv2.imwrite("SAVED_DEPTH.png", disp_color)
     elif key == ord('q') or key == 27:  # 'q' or Esc
         break
 
