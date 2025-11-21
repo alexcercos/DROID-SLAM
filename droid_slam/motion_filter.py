@@ -66,6 +66,7 @@ class MotionFilter:
         else:                
             # index correlation volume
             coords0 = pops.coords_grid(ht, wd, device=self.device)[None,None]
+            #TODO change
             corr = CorrBlock(self.fmap[None,[0]], gmap[None,[0]])(coords0)
 
             # approximate flow magnitude using 1 update iteration
