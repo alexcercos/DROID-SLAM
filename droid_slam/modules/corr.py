@@ -3,30 +3,6 @@ import torch.nn.functional as F
 
 import droid_backends
 
-#TODO
-class DepthCorrBlock:
-    def __init__(self, dmap1, dmap2, num_levels=4, radius=3):
-        self.num_levels = num_levels
-        self.radius = radius
-        self.corr_pyramid = []
-    
-    def __call__(self, coords):
-        out_pyramid = []
-        batch, num, ht, wd, _ = coords.shape
-        # coords = coords.permute(0,1,4,2,3)
-        # coords = coords.contiguous().view(batch*num, 2, ht, wd)
-        
-        # for i in range(self.num_levels):
-        #     pass
-
-        return torch.cat(out_pyramid, dim=2)
-
-    #Corr -> project 3D points in I
-    #      - project back to J
-    #      - correlation with depth in J (bilinear interp)
-    #      - filter points too close or outside bounds
-    #      - 7x7 neighbors, avg pool 4 levels
-
 class CorrSampler(torch.autograd.Function):
 
     @staticmethod

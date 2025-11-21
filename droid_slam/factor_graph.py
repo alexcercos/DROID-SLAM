@@ -113,7 +113,6 @@ class FactorGraph:
             c = (ii == jj).long()
             fmap1 = self.video.fmaps[ii,0].to(self.device).unsqueeze(0)
             fmap2 = self.video.fmaps[jj,c].to(self.device).unsqueeze(0)
-            #TODO change
             corr = CorrBlock(fmap1, fmap2)
             self.corr = corr if self.corr is None else self.corr.cat(corr)
 
@@ -206,7 +205,6 @@ class FactorGraph:
             motn = motn.permute(0,1,4,2,3).clamp(-64.0, 64.0)
         
         # correlation features
-        #TODO ??
         corr = self.corr(coords1)
 
         self.net, delta, weight, damping, upmask = \

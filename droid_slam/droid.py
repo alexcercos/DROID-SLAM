@@ -81,15 +81,13 @@ class Droid:
 
         del self.frontend
 
-        #TODO reactivate backend?
+        torch.cuda.empty_cache()
+        print("#" * 32)
+        self.backend(7)
 
-        # torch.cuda.empty_cache()
-        # print("#" * 32)
-        # self.backend(7)
-
-        # torch.cuda.empty_cache()
-        # print("#" * 32)
-        # self.backend(12)
+        torch.cuda.empty_cache()
+        print("#" * 32)
+        self.backend(12)
 
         camera_trajectory = self.traj_filler(stream)
         return camera_trajectory.inv().data.cpu().numpy()
