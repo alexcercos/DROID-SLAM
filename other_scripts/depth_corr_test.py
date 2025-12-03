@@ -19,6 +19,7 @@ import math
 from cuda_timer import CudaTimer
 
 import geom.projective_ops as pops
+import matplotlib.pyplot as plt
 
 def rotation_matrix_to_quaternion(R):
     # R : numpy array (3x3)
@@ -58,7 +59,7 @@ def rotation_matrix_to_quaternion(R):
 
     return np.array([qx, qy, qz, qw], dtype=np.float32)
 
-def view_reconstruction(cam_scale=0.05):
+def view_reconstruction(cam_scale=0.05, angle=0):
 
     coord_frame = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.1)
 
@@ -81,7 +82,7 @@ def view_reconstruction(cam_scale=0.05):
     pose = torch.tensor([0., 0., 0.5,   0., 0., 0., 1.], device='cuda')
     poses = pose.unsqueeze(0).repeat(2, 1)
 
-    R_np = coord_frame.get_rotation_matrix_from_xyz((0,math.radians(-30),0))
+    R_np = coord_frame.get_rotation_matrix_from_xyz((0,math.radians(angle),0))
     R = torch.tensor(R_np, dtype=torch.float32, device='cuda')
 
     # Rotate translation of pose #2
@@ -108,17 +109,45 @@ def view_reconstruction(cam_scale=0.05):
     ii = torch.tensor([0, 1], device="cuda", dtype=torch.long)
     jj = torch.tensor([1, 0], device="cuda", dtype=torch.long)
 
+    coords0 = pops.coords_grid(H, W, device='cuda')
     coords, valid_mask = \
-        pops.projective_transform(Gs, disps[None], intrinsics[None], ii, jj)
+        pops.projective_transform(Gs, disps[None], intrinsics[None], ii, jj, return_depth=True)
 
     print(coords.shape,valid_mask.shape)
-    print(valid_mask[0, 0, :, :])
+    # print(valid_mask[0, 0, :, :])
 
-    mat = coords[0, 0, :, :]
-    print(np.round(mat.cpu().numpy(), 2))
+    print(coords0.cpu().numpy())
+    coords_small = coords[0, 0, :, :]
+    # print(np.round(coords_small.cpu().numpy(), 2))
+
+    plt.figure(figsize=(12,12))
+    ax = plt.gca()
+
+    # Draw a grid
+    for i in range(H+1):
+        ax.axhline(i, color='black', linewidth=0.5)
+    for j in range(W+1):
+        ax.axvline(j, color='black', linewidth=0.5)
+
+    # Put text in each cell
+    for i in range(H):
+        for j in range(W):
+            x, y, z = coords_small[i, j]
+            ax.text(j + 0.5, H - i - 0.5, f"{x:.2f}/{y:.2f} - {z:.2f}", 
+                    ha='center', va='center', fontsize=4)
+
+    ax.set_xlim(0, W)
+    ax.set_ylim(0, H)
+    ax.set_xticks([])
+    ax.set_yticks([])
+    ax.set_aspect('equal')
+    plt.show()
 
     with CudaTimer("iproj"):
         points = droid_backends.iproj(SE3(poses).inv().data, disps, intrinsics[0])
+
+    # Points contiene las posiciones 3D de las camaras (2,16,16,3)
+    # Se podrian usar a modo de lookup en este ejemplo
 
     B, H, W = disps.shape
     colors = torch.zeros((B, H, W, 3), device=disps.device, dtype=torch.float32)
@@ -158,11 +187,11 @@ def view_reconstruction(cam_scale=0.05):
 
 
 if __name__ == '__main__':
-    # parser = argparse.ArgumentParser()
-    # parser.add_argument("datapath", type=str, help="path to image directory")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--angle", type=float, default=0)
     # parser.add_argument("--filter_threshold", type=float, default=0.005)
     # parser.add_argument("--filter_count", type=int, default=3)
     # parser.add_argument("--cam_scale", type=float, default=0.03)
-    # args = parser.parse_args()
+    args = parser.parse_args()
 
-    view_reconstruction()
+    view_reconstruction(args.angle)
