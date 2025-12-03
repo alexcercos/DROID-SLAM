@@ -4,6 +4,3 @@
 [submodule "thirdparty/eigen"]
 	path = thirdparty/eigen
 	url = https://gitlab.com/libeigen/eigen.git
-[submodule "sk3d_data"]
-	path = sk3d_data
-	url = https://github.com/Skoltech-3D/sk3d_data
