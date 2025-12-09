@@ -59,7 +59,7 @@ def rotation_matrix_to_quaternion(R):
 
     return np.array([qx, qy, qz, qw], dtype=np.float32)
 
-def view_reconstruction(cam_scale=0.05, angle=0):
+def view_reconstruction(cam_scale=0.05, angle=0, print_matrix=False):
 
     coord_frame = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.1)
 
@@ -113,53 +113,105 @@ def view_reconstruction(cam_scale=0.05, angle=0):
     coords, valid_mask = \
         pops.projective_transform(Gs, disps[None], intrinsics[None], ii, jj, return_depth=True)
 
-    print(coords.shape,valid_mask.shape)
-    # print(valid_mask[0, 0, :, :])
+    depth_jj = 1.0 / disps[jj] #[2, 16, 16]
 
-    print(coords0.cpu().numpy())
-    coords_small = coords[0, 0, :, :]
-    # print(np.round(coords_small.cpu().numpy(), 2))
+    x = coords[..., 0] #[1, 2, 16, 16]
+    y = coords[..., 1]
 
-    plt.figure(figsize=(12,12))
-    ax = plt.gca()
+    B, F, H, W = x.shape
 
-    # Draw a grid
-    for i in range(H+1):
-        ax.axhline(i, color='black', linewidth=0.5)
-    for j in range(W+1):
-        ax.axvline(j, color='black', linewidth=0.5)
+    x0 = torch.floor(x).long()
+    x1 = x0 + 1
+    y0 = torch.floor(y).long()
+    y1 = y0 + 1
 
-    # Put text in each cell
-    for i in range(H):
-        for j in range(W):
-            x, y, z = coords_small[i, j]
-            ax.text(j + 0.5, H - i - 0.5, f"{x:.2f}/{y:.2f} - {z:.2f}", 
-                    ha='center', va='center', fontsize=4)
+    wx = x - x0.float()
+    wy = y - y0.float()
 
-    ax.set_xlim(0, W)
-    ax.set_ylim(0, H)
-    ax.set_xticks([])
-    ax.set_yticks([])
-    ax.set_aspect('equal')
-    plt.show()
+    #[1, 2, 16, 16]
+    w00 = (1-wx)*(1-wy)
+    w01 = (1-wx)*wy
+    w10 = wx*(1-wy)
+    w11 = wx*wy
+
+    in_bounds = (
+        (x0 >= 0) & (x1 <= W) &
+        (y0 >= 0) & (y1 <= H)
+    ).unsqueeze(-1)
+
+    #[1, 2, 16, 16, 1]
+    mask = valid_mask.bool() & in_bounds
+
+    x0 = x0.clamp(0, W-1)
+    y0 = y0.clamp(0, H-1)
+    x1 = x1.clamp(0, W-1)
+    y1 = y1.clamp(0, H-1)
+
+    # bilinear sampling
+    frame_idx = torch.arange(F, device="cuda")[None, :, None, None].expand(B, F, H, W)
+    d00 = depth_jj[frame_idx, y0, x0]
+    d01 = depth_jj[frame_idx, y1, x0]
+    d10 = depth_jj[frame_idx, y0, x1]
+    d11 = depth_jj[frame_idx, y1, x1]
+
+    depth_sampled = w00*d00 + w01*d01 + w10*d10 + w11*d11
+
+    # difference between projected depth and real depth at jj
+    zdepth = 1.0 / coords[..., 2]
+    depth_error = (depth_sampled - zdepth).abs().unsqueeze(-1)
+
+    # depth_error = depth_error * mask
+
+    K = 10.0
+    corr = torch.exp(-K * depth_error) * mask
+
+    if print_matrix:
+        plt.figure(figsize=(12,12))
+        ax = plt.gca()
+
+        # Draw a grid
+        for i in range(H+1):
+            ax.axhline(i, color='black', linewidth=0.5)
+        for j in range(W+1):
+            ax.axvline(j, color='black', linewidth=0.5)
+
+        # Put text in each cell
+        for i in range(H):
+            for j in range(W):
+                er = depth_error[0, 0, i, j].item()
+                s = depth_sampled[0,0,i,j].item()
+                z = zdepth[0,0,i,j].item()
+                c = corr[0,0,i,j].item()
+                ax.text(j + 0.5, H - i - 0.5, f"{z:.2f} - {s:.2f}\n{er:.2f};{c:.2f}", 
+                        ha='center', va='center', fontsize=4)
+
+        ax.set_xlim(0, W)
+        ax.set_ylim(0, H)
+        ax.set_xticks([])
+        ax.set_yticks([])
+        ax.set_aspect('equal')
+        plt.show()
 
     with CudaTimer("iproj"):
         points = droid_backends.iproj(SE3(poses).inv().data, disps, intrinsics[0])
 
-    # Points contiene las posiciones 3D de las camaras (2,16,16,3)
-    # Se podrian usar a modo de lookup en este ejemplo
+    mask = (disps > 0.25 * disps.mean())
+
+    points_np = points[mask].cpu().numpy()
 
     B, H, W = disps.shape
     colors = torch.zeros((B, H, W, 3), device=disps.device, dtype=torch.float32)
 
-    colors[0, ..., 2] = 1.0   # blue
-
-    colors[1, ..., 0] = 1.0   # yellow
-    colors[1, ..., 1] = 0.5
-
-    mask = (disps > .25 * disps.mean())
-    points_np = points[mask].cpu().numpy()
+    colormap = plt.colormaps.get_cmap('jet')
     colors_np = colors[mask].cpu().numpy()
+    corr_masked = corr[mask[None].unsqueeze(-1)].cpu().numpy()
+    jet_rgb = colormap(corr_masked)[:, :3]  # shape (N, 3)
+
+    if print_matrix:
+        print(corr_masked)
+
+    colors_np[:, :] = jet_rgb
+    colors[mask] = torch.from_numpy(colors_np).to(colors.device).float()
 
     point_cloud = o3d.geometry.PointCloud()
     point_cloud.points = o3d.utility.Vector3dVector(points_np)
@@ -191,7 +243,8 @@ if __name__ == '__main__':
     parser.add_argument("--angle", type=float, default=0)
     # parser.add_argument("--filter_threshold", type=float, default=0.005)
     # parser.add_argument("--filter_count", type=int, default=3)
-    # parser.add_argument("--cam_scale", type=float, default=0.03)
+    parser.add_argument("--cam_scale", type=float, default=0.03)
+    parser.add_argument("--print", action="store_true")
     args = parser.parse_args()
 
-    view_reconstruction(args.angle)
+    view_reconstruction(cam_scale=args.cam_scale, angle=args.angle, print_matrix=args.print)
