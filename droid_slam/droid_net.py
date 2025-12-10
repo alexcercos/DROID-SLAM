@@ -239,7 +239,7 @@ class DroidNet(nn.Module):
 
         fmaps, net, inp = self.extract_features(images)
         net, inp = net[:,ii], inp[:,ii]
-        #TODO change
+        
         corr_fn = CorrBlock(fmaps[:,ii], fmaps[:,jj], num_levels=4, radius=3)
 
         ht, wd = images.shape[-2:]

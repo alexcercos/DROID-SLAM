@@ -71,7 +71,7 @@ def view_reconstruction(cam_scale=0.05, angle=0, print_matrix=False):
 
     # Wedge-shaped depth: minimum at center, increases toward sides
     disp1 = X/4 + 2
-    disp2 = -X/4 + 2
+    disp2 = abs(-X/4) + 2
 
     disp1 = disp1.cuda()
     disp2 = disp2.cuda()
@@ -109,7 +109,6 @@ def view_reconstruction(cam_scale=0.05, angle=0, print_matrix=False):
     ii = torch.tensor([0, 1], device="cuda", dtype=torch.long)
     jj = torch.tensor([1, 0], device="cuda", dtype=torch.long)
 
-    coords0 = pops.coords_grid(H, W, device='cuda')
     coords, valid_mask = \
         pops.projective_transform(Gs, disps[None], intrinsics[None], ii, jj, return_depth=True)
 
@@ -140,7 +139,7 @@ def view_reconstruction(cam_scale=0.05, angle=0, print_matrix=False):
     ).unsqueeze(-1)
 
     #[1, 2, 16, 16, 1]
-    mask = valid_mask.bool() & in_bounds
+    dmask = valid_mask.bool() & in_bounds
 
     x0 = x0.clamp(0, W-1)
     y0 = y0.clamp(0, H-1)
@@ -160,10 +159,8 @@ def view_reconstruction(cam_scale=0.05, angle=0, print_matrix=False):
     zdepth = 1.0 / coords[..., 2]
     depth_error = (depth_sampled - zdepth).abs().unsqueeze(-1)
 
-    # depth_error = depth_error * mask
-
     K = 10.0
-    corr = torch.exp(-K * depth_error) * mask
+    corr = torch.exp(-K * depth_error) * dmask
 
     if print_matrix:
         plt.figure(figsize=(12,12))
@@ -211,7 +208,6 @@ def view_reconstruction(cam_scale=0.05, angle=0, print_matrix=False):
         print(corr_masked)
 
     colors_np[:, :] = jet_rgb
-    colors[mask] = torch.from_numpy(colors_np).to(colors.device).float()
 
     point_cloud = o3d.geometry.PointCloud()
     point_cloud.points = o3d.utility.Vector3dVector(points_np)
