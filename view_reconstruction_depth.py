@@ -18,9 +18,7 @@ import matplotlib.colors as mcolors
 from cuda_timer import CudaTimer
 import geom.projective_ops as pops
 
-def view_reconstruction(datapath: str, filter_thresh=0.005, filter_count=2, cam_scale=0.05,
-                        depth_min=0.0,
-                        depth_max=0.5):
+def view_reconstruction(datapath: str, filter_thresh=0.005, filter_count=2, cam_scale=0.05):
     # Load .npy files and convert to torch tensors
     # images = torch.from_numpy(np.load(f"{datapath}/images.npy")).cuda()[..., ::2, ::2]
     disps = torch.from_numpy(np.load(f"{datapath}/disps.npy")).cuda()[..., ::2, ::2]
@@ -33,15 +31,12 @@ def view_reconstruction(datapath: str, filter_thresh=0.005, filter_count=2, cam_
 
     disps = disps.contiguous()
 
-    index = torch.arange(len(disps), device="cuda")
-    thresh = filter_thresh * torch.ones_like(disps.mean(dim=[1, 2]))
 
     with CudaTimer("iproj"):
         points = droid_backends.iproj(SE3(poses).inv().data, disps, intrinsics[0])
     
-    # Get current camera position (first camera)
-    current_cam_pose = SE3(poses[0]).inv().matrix().cpu().numpy()
-    cam_center = current_cam_pose[:3, 3]
+    # index = torch.arange(len(disps), device="cuda")
+    # thresh = filter_thresh * torch.ones_like(disps.mean(dim=[1, 2]))
 
     # with CudaTimer("filter"):
     #     counts = droid_backends.depth_filter(poses, disps, intrinsics[0], index, thresh)
@@ -153,7 +148,6 @@ if __name__ == '__main__':
     parser.add_argument("--filter_threshold", type=float, default=0.005)
     parser.add_argument("--filter_count", type=int, default=3)
     parser.add_argument("--cam_scale", type=float, default=0.05)
-    parser.add_argument("--dmax", type=float, default=0.5)
     args = parser.parse_args()
 
-    view_reconstruction(args.datapath, args.filter_threshold, args.filter_count, args.cam_scale, depth_max=args.dmax)
+    view_reconstruction(args.datapath, args.filter_threshold, args.filter_count, args.cam_scale)
