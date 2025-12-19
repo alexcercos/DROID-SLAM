@@ -6,7 +6,7 @@ from collections import OrderedDict
 from droid_net import DroidNet
 
 import geom.projective_ops as pops
-from modules.corr import CorrBlock
+from modules.corr import CorrBlock, DepthCorrBlock
 
 
 class MotionFilter:
@@ -55,28 +55,46 @@ class MotionFilter:
 
         # extract features
         gmap = self.__feature_encoder(inputs)
-
+        if self.video.use_depth_corr:
+            gdep = depth[3::8,3::8]
+            gdep = torch.where(gdep>0, 1.0/gdep, gdep)
+        
         ### always add first frame to the depth video ###
         if self.video.counter.value == 0:
             net, inp = self.__context_encoder(inputs[:,[0]])
             self.net, self.inp, self.fmap = net, inp, gmap
+            if self.video.use_depth_corr:
+                self.fdep = gdep
             self.video.append(tstamp, image[0], Id, 1.0, depth, intrinsics / 8.0, gmap, net[0,0], inp[0,0])
 
         ### only add new frame if there is enough motion ###
         else:                
             # index correlation volume
             coords0 = pops.coords_grid(ht, wd, device=self.device)[None,None]
-            #TODO change
-            corr = CorrBlock(self.fmap[None,[0]], gmap[None,[0]])(coords0)
+
+            if self.video.use_depth_corr:
+                t_disps = torch.stack([self.fdep, gdep], dim=0).to(self.device, dtype=torch.float)
+                t_poses = torch.tensor([0, 0, 0, 0, 0, 0, 1], dtype=torch.float, device=self.device).unsqueeze(0).repeat(2, 1)
+                t_intr = self.video.intrinsics[0].repeat(2,1)
+                t_ii = torch.tensor([0], device=self.device, dtype=torch.long)
+                t_jj = torch.tensor([1], device=self.device, dtype=torch.long)
+                corr = DepthCorrBlock(t_disps, t_poses, t_intr, t_ii, t_jj, self.device)(coords0)
+            else:
+                corr = CorrBlock(self.fmap[None,[0]], gmap[None,[0]])(coords0)
+            
+            # print("MF corr:",corr.shape,"dcorr",dcorr.shape,self.video.use_depth_corr) #,"dcorr:",dcorr.shape)
 
             # approximate flow magnitude using 1 update iteration
             _, delta, weight = self.update(self.net[None], self.inp[None], corr)
 
             # check motion magnitue / add new frame to video
-            if delta.norm(dim=-1).mean().item() > self.thresh:
+            motion_mag = delta.norm(dim=-1).mean().item()
+            if motion_mag > self.thresh:
                 self.count = 0
                 net, inp = self.__context_encoder(inputs[:,[0]])
                 self.net, self.inp, self.fmap = net, inp, gmap
+                if self.video.use_depth_corr:
+                    self.fdep = gdep
                 self.video.append(tstamp, image[0], None, None, depth, intrinsics / 8.0, gmap, net[0], inp[0])
 
             else:

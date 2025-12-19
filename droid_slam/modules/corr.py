@@ -98,8 +98,8 @@ class DepthCorrBlock:
             #indexing moves ":" to last dim
             sample_out = sample_out.permute(0, 1, 4, 2, 3)
 
-            ix = ix//2
-            iy = iy//2
+            ix = torch.div(ix, 2, rounding_mode='trunc') #ix//2
+            iy = torch.div(iy, 2, rounding_mode='trunc') #iy//2
 
             out_pyramid.append(sample_out)
 

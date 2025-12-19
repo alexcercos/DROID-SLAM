@@ -124,6 +124,7 @@ if __name__ == '__main__':
     parser.add_argument("--no_use_depth", action="store_true")
     parser.add_argument("--reconstruction_path", help="path to saved reconstruction")
     parser.add_argument("--upsample", action="store_true")
+    parser.add_argument("--depth_corr", action="store_true")
     args = parser.parse_args()
 
     imagefolder = args.testmode

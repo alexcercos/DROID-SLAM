@@ -10,8 +10,9 @@ from droid_net import cvx_upsample
 import geom.projective_ops as pops
 
 class DepthVideo:
-    def __init__(self, image_size=[480, 640], buffer=1024, stereo=False, device="cuda:0"):
-                
+    def __init__(self, image_size=[480, 640], buffer=1024, stereo=False, device="cuda:0", depth_corr=False):
+        
+        self.use_depth_corr = depth_corr
         # current keyframe count
         self.counter = Value('i', 0)
         self.ready = Value('i', 0)

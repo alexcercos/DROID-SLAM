@@ -240,7 +240,7 @@ class DroidNet(nn.Module):
         fmaps, net, inp = self.extract_features(images)
         net, inp = net[:,ii], inp[:,ii]
         
-        corr_fn = CorrBlock(fmaps[:,ii], fmaps[:,jj], num_levels=4, radius=3)
+        #corr_fn = CorrBlock(fmaps[:,ii], fmaps[:,jj], num_levels=4, radius=3)
 
         ht, wd = images.shape[-2:]
         coords0 = pops.coords_grid(ht//8, wd//8, device=images.device)

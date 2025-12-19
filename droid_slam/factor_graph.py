@@ -4,7 +4,7 @@ import numpy as np
 
 import matplotlib.pyplot as plt
 from lietorch import SE3
-from modules.corr import CorrBlock, AltCorrBlock
+from modules.corr import CorrBlock, AltCorrBlock, DepthCorrBlock
 import geom.projective_ops as pops
 
 
@@ -101,7 +101,7 @@ class FactorGraph:
 
         # place limit on number of factors
         if self.max_factors > 0 and self.ii.shape[0] + ii.shape[0] > self.max_factors \
-                and self.corr is not None and remove:
+                and ((self.corr is not None) or self.video.use_depth_corr) and remove:
             
             ix = torch.arange(len(self.age))[torch.argsort(self.age).cpu()]
             self.rm_factors(ix >= self.max_factors - ii.shape[0], store=True)
@@ -113,9 +113,10 @@ class FactorGraph:
             c = (ii == jj).long()
             fmap1 = self.video.fmaps[ii,0].to(self.device).unsqueeze(0)
             fmap2 = self.video.fmaps[jj,c].to(self.device).unsqueeze(0)
-            #TODO change
-            corr = CorrBlock(fmap1, fmap2)
-            self.corr = corr if self.corr is None else self.corr.cat(corr)
+            
+            if not self.video.use_depth_corr:
+                corr = CorrBlock(fmap1, fmap2)
+                self.corr = corr if self.corr is None else self.corr.cat(corr)
 
             inp = self.video.inps[ii].to(self.device).unsqueeze(0)
             self.inp = inp if self.inp is None else torch.cat([self.inp, inp], 1)
@@ -150,7 +151,8 @@ class FactorGraph:
         self.age = self.age[~mask]
         
         if self.corr_impl == "volume":
-            self.corr = self.corr[~mask]
+            if not self.video.use_depth_corr:
+                self.corr = self.corr[~mask]
 
         if self.net is not None:
             self.net = self.net[:,~mask]
@@ -206,8 +208,12 @@ class FactorGraph:
             motn = motn.permute(0,1,4,2,3).clamp(-64.0, 64.0)
         
         # correlation features
-        #TODO ??
-        corr = self.corr(coords1)
+        if self.video.use_depth_corr:
+            corr = DepthCorrBlock(self.video.disps, self.video.poses, 
+                               self.video.intrinsics, self.ii, self.jj, self.device)(self.coords0)
+        else:
+            corr = self.corr(coords1)
+        # print("corr:",corr.shape,"dcorr:",dcorr.shape,self.video.use_depth_corr)
 
         self.net, delta, weight, damping, upmask = \
             self.update_op(self.net, self.inp, corr, motn, self.ii, self.jj)
@@ -256,7 +262,8 @@ class FactorGraph:
         t = self.video.counter.value
 
         num, rig, ch, ht, wd = self.video.fmaps.shape
-        corr_op = AltCorrBlock(self.video.fmaps.view(1, num*rig, ch, ht, wd))
+        if not self.video.use_depth_corr:
+            corr_op = AltCorrBlock(self.video.fmaps.view(1, num*rig, ch, ht, wd))
 
         for step in range(steps):
             print("Global BA Iteration #{}".format(step+1))
@@ -272,7 +279,14 @@ class FactorGraph:
                 jjs = self.jj[v]
 
                 ht, wd = self.coords0.shape[0:2]
-                corr1 = corr_op(coords1[:,v], rig * iis, rig * jjs + (iis == jjs).long())
+
+                if self.video.use_depth_corr:
+                    corr1 = DepthCorrBlock(self.video.disps, self.video.poses, 
+                                        self.video.intrinsics, self.ii[v], self.jj[v], self.device)(self.coords0)
+                else:
+                    corr1 = corr_op(coords1[:,v], rig * iis, rig * jjs + (iis == jjs).long())
+
+                # print("altcorr:",corr1.shape,"dcorr:",dcorr.shape, self.video.use_depth_corr)
 
                 with torch.cuda.amp.autocast(enabled=True):
                  
