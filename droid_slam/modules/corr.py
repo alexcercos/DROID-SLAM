@@ -47,7 +47,7 @@ class DepthCorrBlock:
         x1 = x1.clamp(0, W-1)
         y1 = y1.clamp(0, H-1)
 
-        frame_idx = torch.arange(N, device="cuda")[None, :, None, None].expand(B, N, H, W)
+        frame_idx = torch.arange(N, device=device)[None, :, None, None].expand(B, N, H, W)
         d00 = depth_jj[frame_idx, y0, x0]
         d01 = depth_jj[frame_idx, y1, x0]
         d10 = depth_jj[frame_idx, y0, x1]
