@@ -7,6 +7,7 @@ from lietorch import SE3
 from modules.corr import CorrBlock, AltCorrBlock, DepthCorrBlock
 import geom.projective_ops as pops
 
+import debug_corr
 
 class FactorGraph:
     def __init__(self, video, update_op, device="cuda:0", corr_impl="volume", max_factors=-1, upsample=False):
@@ -198,7 +199,7 @@ class FactorGraph:
 
 
     @torch.cuda.amp.autocast(enabled=True)
-    def update(self, t0=None, t1=None, itrs=2, use_inactive=False, EP=1e-7, motion_only=False):
+    def update(self, t0=None, t1=None, itrs=2, use_inactive=False, EP=1e-7, motion_only=False, fr_name="unknown"):
         """ run update operator on factor graph """
 
         # motion features
@@ -208,11 +209,20 @@ class FactorGraph:
             motn = motn.permute(0,1,4,2,3).clamp(-64.0, 64.0)
         
         # correlation features
-        if self.video.use_depth_corr:
+        if self.video.use_depth_corr: #TODO usar disps o disps_sens?
             corr = DepthCorrBlock(self.video.disps, self.video.poses, 
                                self.video.intrinsics, self.ii, self.jj, self.device)(self.coords0)
         else:
             corr = self.corr(coords1)
+
+            dcorr = DepthCorrBlock(self.video.disps, self.video.poses, 
+                    self.video.intrinsics, self.ii, self.jj, self.device)(self.coords0)
+
+            if fr_name is not None:
+                # print("-->",fr_name,corr.shape,self.ii.shape)
+                debug_corr.save_frame_info(fr_name, self.ii, self.jj, corr, dcorr, 
+                                           self.video.images, self.video.disps, self.video.disps_sens, self.video.poses)
+
         # print("corr:",corr.shape,"dcorr:",dcorr.shape,self.video.use_depth_corr)
 
         self.net, delta, weight, damping, upmask = \
@@ -280,7 +290,7 @@ class FactorGraph:
 
                 ht, wd = self.coords0.shape[0:2]
 
-                if self.video.use_depth_corr:
+                if self.video.use_depth_corr: #TODO usar disps o disps_sens?
                     corr1 = DepthCorrBlock(self.video.disps, self.video.poses, 
                                         self.video.intrinsics, self.ii[v], self.jj[v], self.device)(self.coords0)
                 else:
