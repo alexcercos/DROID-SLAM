@@ -6,9 +6,12 @@ import matplotlib.pyplot as plt
 
 folder = "CURRENT_DEBUG"
 
+debug_active = False
 disp_div = 1
 
 def save_frame_info(frame_name, ii, jj, corr, depth_corr, images, disps, disps_sens, poses):
+
+    if not debug_active: return
 
     ii = ii.cpu().numpy()
     jj = jj.cpu().numpy()
@@ -46,8 +49,8 @@ def save_frame_info(frame_name, ii, jj, corr, depth_corr, images, disps, disps_s
         plt.imsave(f"{subfolder}/image_j.png", np.transpose(images[jx], (1, 2, 0)).astype(np.uint8)) # (3, 440, 440)
 
         # Correlations
-        for c_corr,name in [(corr_i,"corr_i"),(depth_corr_i,"depth_corr_i")]:
-            corr_avg = c_corr.mean(axis=1).squeeze(0)
+        for c_corr,name,f in [(corr_i,"corr_i",1.0),(depth_corr_i,"depth_corr_i",0.25)]:
+            corr_avg = c_corr.mean(axis=1).squeeze(0) / f
             corr_clamped = np.clip(corr_avg, 0.0, 1.0)
             corr_color = plt.cm.jet(corr_clamped)[..., :3]
             corr_up = np.repeat(np.repeat(corr_color, 8, axis=0),8, axis=1)
