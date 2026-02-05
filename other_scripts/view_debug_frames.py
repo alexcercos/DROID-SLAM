@@ -8,7 +8,7 @@ from collections import defaultdict
 # ==========================
 
 root_dir = "."
-window_name = "Image (Left) + Disparity (Right)"
+window_name = "Corr-Depth corrs (K=10,100) / Disps, disps sens, images"
 
 IMAGE_LIST = [
     ["corr_i_mean.png", "depth_corr_i_mean.png", "depth_corr_i_mean_k100.png"], 
@@ -22,17 +22,34 @@ IMAGE_LIST = [
 
 root = Path(root_dir)
 
-# index_map[frame] = sorted list of iterations that contain that frame
-index_map = defaultdict(list)
+current_index = None
+current_iterator = 0
+looping = True
+#organize with values -> iteration - upd it. - fr I - fr J
+#switch i-j
+
+index_map = {}
+iterations = []
 
 for iter_dir in sorted(p for p in root.iterdir() if p.is_dir()):
+
+    fr, upd_l, upd_i = iter_dir.name.split('-')
+    iterations.append(fr)
+
     for frame_dir in iter_dir.iterdir():
         if frame_dir.is_dir():
-            index_map[frame_dir.name].append(iter_dir.name)
 
-# sort + unique
-for frame in index_map:
-    index_map[frame] = sorted(set(index_map[frame]))
+            ii,jj = frame_dir.name.split('-')
+
+            if fr not in index_map:
+                index_map[fr] = {}
+            if (upd_l,upd_i) not in index_map[fr]:
+                index_map[fr][f"{upd_l}-{upd_i}"] = []
+
+            index_map[fr][f"{upd_l}-{upd_i}"].append((int(ii),int(jj)))
+
+            if current_index is None:
+                current_index = [0, int(upd_l), int(upd_i), int(ii), int(jj)]
 
 if not index_map:
     raise RuntimeError("No frames found")
@@ -40,28 +57,16 @@ if not index_map:
 frame_list = sorted(index_map.keys())
 
 # ==========================
-# Viewer state
-# ==========================
-
-frame_idx = 0
-iter_idx = 0
-
-def clamp_iter_idx():
-    global iter_idx
-    iters = index_map[frame_list[frame_idx]]
-    iter_idx = max(0, min(iter_idx, len(iters) - 1))
-
-clamp_iter_idx()
-
-# ==========================
 # Image loading
 # ==========================
 
 def load_images():
-    frame = frame_list[frame_idx]
-    iteration = index_map[frame][iter_idx]
 
-    frame_dir = root / iteration / frame
+    fr_i, upd_l, upd_i, ii, jj = current_index
+
+    fr = iterations[fr_i]
+
+    frame_dir = root / f"{fr}-{upd_l}-{upd_i}" / f"{ii}-{jj}"
 
     combined = []
 
@@ -74,6 +79,60 @@ def load_images():
 
 
     return np.vstack(combined)
+
+def iterate(increase):
+
+    global current_index
+    global index_map
+    
+    if current_iterator == 0:
+        current_index[0] = (current_index[0] + increase + len(iterations)) % len(iterations)
+    else:
+        current_index[current_iterator] += increase
+
+    fr_i, upd_l, upd_i, ii, jj = current_index
+
+    fr = iterations[fr_i]
+
+    upd_dir = root / f"{fr}-{upd_l}-{upd_i}"
+
+    if not upd_dir.exists():
+        if upd_l == 2 and current_iterator != 1:
+            upd_l = 1
+            upd_i = 3
+        elif upd_l >= 2:
+            upd_l = 1
+            upd_i = 0
+        elif upd_i > 3:
+            upd_i = 0
+        elif upd_i < 0:
+            upd_i = 3
+        upd_dir = root / f"{fr}-{upd_l}-{upd_i}"
+
+    if not upd_dir.exists():
+        upd_i = 0
+        upd_l = 1
+        upd_dir = root / f"{fr}-{upd_l}-{upd_i}"
+
+    assert upd_dir.exists(), upd_dir.name
+
+    frame_dir = upd_dir / f"{ii}-{jj}"
+    if not frame_dir.exists():
+        
+        frame_list = index_map[fr][f"{upd_l}-{upd_i}"]
+
+        best_match = (ii,jj)
+        for fi,fj in frame_list:
+            curr_d = abs(fi-ii) + abs(fj-jj)
+            best_match = (fi,fj)
+
+        ii,jj = best_match
+
+    frame_dir = upd_dir / f"{ii}-{jj}"
+    assert frame_dir.exists(), frame_dir.name
+
+    current_index = [fr_i, upd_l, upd_i, ii, jj]
+
 
 # ==========================
 # Main loop
@@ -94,39 +153,39 @@ while True:
     # Frame navigation
     # ======================
     if key == ord('d') or key == 83:  # right
-        frame_idx = (frame_idx + 1) % len(frame_list)
-        clamp_iter_idx()
+        current_iterator = (current_iterator + 1) % len(current_index)
 
     elif key == ord('a') or key == 81:  # left
-        frame_idx = (frame_idx - 1) % len(frame_list)
-        clamp_iter_idx()
+        current_iterator = (current_iterator - 1 + len(current_index)) % len(current_index)
 
-    # ======================
-    # Iteration navigation
-    # ======================
-    elif key == ord('e'):  # next iteration
-        iters = index_map[frame_list[frame_idx]]
-        iter_idx = (iter_idx + 1) % len(iters)
+    elif key == ord('w') or key == 82:  # next iteration
+        iterate(1)
 
-    elif key == ord('w'):  # previous iteration
-        iters = index_map[frame_list[frame_idx]]
-        iter_idx = (iter_idx - 1) % len(iters)
+    elif key == ord('s') or key == 84:  # previous iteration
+        iterate(-1)
 
-    # ======================
-    # Quit
-    # ======================
+    # elif key == ord('l'): #Toggle looping
+    #     looping = not looping
+    
+    elif key == ord('x'): #switch i-j
+        i,j = current_index[-2:]
+        current_index[-2] = j
+        current_index[-1] = i
+
     elif key == ord('q') or key == 27:
         break
 
     # ======================
     # Status line
     # ======================
-    frame = frame_list[frame_idx]
-    iteration = index_map[frame][iter_idx]
-    print(
-        f"Frame {frame_idx+1}/{len(frame_list)}: {frame} | "
-        f"Iter {iter_idx+1}/{len(index_map[frame])}: {iteration} | ",
-        end="\r"
-    )
+
+    print_line = ""
+    for i,n in enumerate(current_index):
+        if current_iterator==i:
+            print_line+=f"[{n}] "
+        else:
+            print_line+=f"{n} "
+
+    print(print_line+"      ", end="\r")
 
 cv2.destroyAllWindows()

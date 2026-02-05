@@ -18,15 +18,15 @@ import matplotlib.colors as mcolors
 from cuda_timer import CudaTimer
 import geom.projective_ops as pops
 
-def view_reconstruction(datapath: str, filter_thresh=0.005, filter_count=2, cam_scale=0.05):
+def view_reconstruction(datapath: str, index=3, filter_thresh=0.005, filter_count=2, cam_scale=0.05):
     # Load .npy files and convert to torch tensors
     # images = torch.from_numpy(np.load(f"{datapath}/images.npy")).cuda()[..., ::2, ::2]
     disps = torch.from_numpy(np.load(f"{datapath}/disps.npy")).cuda()[..., ::2, ::2]
     poses = torch.from_numpy(np.load(f"{datapath}/poses.npy")).cuda()
     intrinsics = 4 * torch.from_numpy(np.load(f"{datapath}/intrinsics.npy")).cuda()
 
-    disps = disps[3:5]
-    poses = poses[3:5]
+    disps = disps[index:index+2]
+    poses = poses[index:index+2]
     intrinsics = intrinsics[:2]
 
     disps = disps.contiguous()
@@ -148,6 +148,7 @@ if __name__ == '__main__':
     parser.add_argument("--filter_threshold", type=float, default=0.005)
     parser.add_argument("--filter_count", type=int, default=3)
     parser.add_argument("--cam_scale", type=float, default=0.05)
+    parser.add_argument("--index", type=int, default=3)
     args = parser.parse_args()
 
-    view_reconstruction(args.datapath, args.filter_threshold, args.filter_count, args.cam_scale)
+    view_reconstruction(args.datapath, args.index, args.filter_threshold, args.filter_count, args.cam_scale)
