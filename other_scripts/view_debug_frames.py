@@ -2,6 +2,13 @@ import cv2
 import numpy as np
 from pathlib import Path
 from collections import defaultdict
+import re
+
+def natural_key(s):
+    return [
+        int(text) if text.isdigit() else text.lower()
+        for text in re.split(r'(\d+)', s)
+    ]
 
 # ==========================
 # Configuration
@@ -31,10 +38,11 @@ looping = True
 index_map = {}
 iterations = []
 
-for iter_dir in sorted(p for p in root.iterdir() if p.is_dir()):
+for iter_dir in sorted((p for p in root.iterdir() if p.is_dir()),key=lambda p: natural_key(p.name)):
 
     fr, upd_l, upd_i = iter_dir.name.split('-')
-    iterations.append(fr)
+    if len(iterations)==0 or fr != iterations[-1]:
+        iterations.append(fr)
 
     for frame_dir in iter_dir.iterdir():
         if frame_dir.is_dir():
@@ -179,7 +187,7 @@ while True:
     # Status line
     # ======================
 
-    print_line = ""
+    print_line = iterations[current_index[0]]+" / "
     for i,n in enumerate(current_index):
         if current_iterator==i:
             print_line+=f"[{n}] "
