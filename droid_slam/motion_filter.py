@@ -78,7 +78,8 @@ class MotionFilter:
                 t_intr = self.video.intrinsics[0].repeat(2,1)
                 t_ii = torch.tensor([0], device=self.device, dtype=torch.long)
                 t_jj = torch.tensor([1], device=self.device, dtype=torch.long)
-                corr = DepthCorrBlock(t_disps, t_poses, t_intr, t_ii, t_jj, self.device)(coords0)
+                Gs = lietorch.SE3(t_poses[None])
+                corr = DepthCorrBlock(t_disps, Gs, t_intr, t_ii, t_jj, self.device)(coords0)
             else:
                 corr = CorrBlock(self.fmap[None,[0]], gmap[None,[0]])(coords0)
             

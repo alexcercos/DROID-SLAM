@@ -210,13 +210,14 @@ class FactorGraph:
         
         # correlation features
         if self.video.use_depth_corr: #TODO usar disps o disps_sens?
-            corr = DepthCorrBlock(self.video.disps, self.video.poses, 
-                               self.video.intrinsics, self.ii, self.jj, self.device)(self.coords0)
+            Gs = SE3(self.video.poses[None])
+            corr = DepthCorrBlock(self.video.disps, Gs, self.video.intrinsics, 
+                               self.ii, self.jj, self.device)(self.coords0)
         else:
             corr = self.corr(coords1)
-
-            dcorr = DepthCorrBlock(self.video.disps, self.video.poses, 
-                    self.video.intrinsics, self.ii, self.jj, self.device)(self.coords0)
+            Gs = SE3(self.video.poses[None])
+            dcorr = DepthCorrBlock(self.video.disps, Gs, self.video.intrinsics, 
+                    self.ii, self.jj, self.device)(self.coords0)
 
             if fr_name is not None:
                 # print("-->",fr_name,corr.shape,self.ii.shape)
@@ -291,8 +292,9 @@ class FactorGraph:
                 ht, wd = self.coords0.shape[0:2]
 
                 if self.video.use_depth_corr: #TODO usar disps o disps_sens?
-                    corr1 = DepthCorrBlock(self.video.disps, self.video.poses, 
-                                        self.video.intrinsics, self.ii[v], self.jj[v], self.device)(self.coords0)
+                    Gs = SE3(self.video.poses[None])
+                    corr1 = DepthCorrBlock(self.video.disps, Gs, self.video.intrinsics, 
+                                        self.ii[v], self.jj[v], self.device)(self.coords0)
                 else:
                     corr1 = corr_op(coords1[:,v], rig * iis, rig * jjs + (iis == jjs).long())
 

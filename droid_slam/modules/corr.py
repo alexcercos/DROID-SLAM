@@ -7,10 +7,9 @@ import geom.projective_ops as pops
 from lietorch import SE3
 
 class DepthCorrBlock:
-    def __init__(self, dmaps, poses, intrinsics, ii, jj, device, num_levels=4, radius=3):
+    def __init__(self, dmaps, Gs, intrinsics, ii, jj, device, num_levels=4, radius=3):
         self.num_levels = num_levels
-
-        Gs = SE3(poses[None])
+        # print(dmaps.shape,poses.shape,intrinsics.shape,ii.shape,jj.shape)
 
         coords, valid_mask = \
             pops.projective_transform(Gs, dmaps[None], intrinsics[None], ii, jj, return_depth=True)

@@ -226,7 +226,7 @@ class DroidNet(nn.Module):
 
 
     #Esto habria que modificarlo si utiliza depths
-    def forward(self, Gs, poses, images, disps, intrinsics, graph=None, num_steps=12, fixedp=2):
+    def forward(self, Gs, images, disps, intrinsics, graph=None, num_steps=12, fixedp=2):
         """ Estimates SE3 or Sim3 between pair of frames """
 
         u = keyframe_indicies(graph)
@@ -246,7 +246,7 @@ class DroidNet(nn.Module):
         coords1, _ = pops.projective_transform(Gs, disps, intrinsics, ii, jj)
         target = coords1.clone()
 
-        dcorr = DepthCorrBlock(disps[-1], poses[-1], intrinsics[-1], ii, jj, images.device)(coords0)
+        dcorr = DepthCorrBlock(disps[-1], Gs, intrinsics[-1], ii, jj, images.device)(coords0)
 
         Gs_list, disp_list, residual_list = [], [], []
         for step in range(num_steps):
