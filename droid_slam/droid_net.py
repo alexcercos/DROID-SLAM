@@ -5,7 +5,7 @@ import torch.nn.functional as F
 from collections import OrderedDict
 
 from modules.extractor import BasicEncoder
-from modules.corr import CorrBlock
+from modules.corr import CorrBlock, DepthCorrBlock
 from modules.gru import ConvGRU
 from modules.clipping import GradientClip
 
@@ -226,10 +226,8 @@ class DroidNet(nn.Module):
 
 
     #Esto habria que modificarlo si utiliza depths
-    def forward(self, Gs, images, disps, intrinsics, graph=None, num_steps=12, fixedp=2):
+    def forward(self, Gs, poses, images, disps, intrinsics, graph=None, num_steps=12, fixedp=2):
         """ Estimates SE3 or Sim3 between pair of frames """
-
-        assert False, "parece que no lo ejecuta nunca"
 
         u = keyframe_indicies(graph)
         ii, jj, kk = graph_to_edge_list(graph)
@@ -240,13 +238,15 @@ class DroidNet(nn.Module):
         fmaps, net, inp = self.extract_features(images)
         net, inp = net[:,ii], inp[:,ii]
         
-        #corr_fn = CorrBlock(fmaps[:,ii], fmaps[:,jj], num_levels=4, radius=3)
+        # corr_fn = CorrBlock(fmaps[:,ii], fmaps[:,jj], num_levels=4, radius=3)
 
         ht, wd = images.shape[-2:]
         coords0 = pops.coords_grid(ht//8, wd//8, device=images.device)
         
         coords1, _ = pops.projective_transform(Gs, disps, intrinsics, ii, jj)
         target = coords1.clone()
+
+        dcorr = DepthCorrBlock(disps[-1], poses[-1], intrinsics[-1], ii, jj, images.device)(coords0)
 
         Gs_list, disp_list, residual_list = [], [], []
         for step in range(num_steps):
@@ -256,7 +256,7 @@ class DroidNet(nn.Module):
             target = target.detach()
 
             # extract motion features
-            corr = corr_fn(coords1)
+            # corr = corr_fn(coords1)
             resd = target - coords1
             flow = coords1 - coords0
 
@@ -264,7 +264,7 @@ class DroidNet(nn.Module):
             motion = motion.permute(0,1,4,2,3).clamp(-64.0, 64.0)
 
             net, delta, weight, eta, upmask = \
-                self.update(net, inp, corr, motion, ii, jj)
+                self.update(net, inp, dcorr, motion, ii, jj)
 
             target = coords1 + delta
 

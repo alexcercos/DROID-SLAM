@@ -16,6 +16,8 @@ import os.path as osp
 from .augmentation import RGBDAugmentor
 from .rgbd_utils import *
 
+from scipy.ndimage import gaussian_filter
+
 class RGBDDataset(data.Dataset):
     def __init__(self, name, datapath, n_frames=4, crop_size=[384,512], fmin=8.0, fmax=75.0, do_aug=True):
         """ Base class for RGBD dataset """
@@ -31,20 +33,18 @@ class RGBDDataset(data.Dataset):
             self.aug = RGBDAugmentor(crop_size=crop_size)
 
         # building dataset is expensive, cache so only needs to be performed once
-        # cur_path = osp.dirname(osp.abspath(__file__))
-        # if not os.path.isdir(osp.join(cur_path, 'cache')):
-        #     os.mkdir(osp.join(cur_path, 'cache'))
+        cur_path = osp.dirname(osp.abspath(__file__))
+        if not os.path.isdir(osp.join(cur_path, 'cache')):
+            os.mkdir(osp.join(cur_path, 'cache'))
         
-        # cache_path = osp.join(cur_path, 'cache', '{}.pickle'.format(self.name))
+        cache_path = osp.join(cur_path, 'cache', '{}.pickle'.format(self.name))
 
-        # if osp.isfile(cache_path):
-        #     scene_info = pickle.load(open(cache_path, 'rb'))[0]
-        # else:
-        #     scene_info = self._build_dataset()
-        #     with open(cache_path, 'wb') as cachefile:
-        #         pickle.dump((scene_info,), cachefile)
-
-        scene_info = self._build_dataset()
+        if osp.isfile(cache_path):
+            scene_info = pickle.load(open(cache_path, 'rb'))[0]
+        else:
+            scene_info = self._build_dataset()
+            with open(cache_path, 'wb') as cachefile:
+                pickle.dump((scene_info,), cachefile)
 
         self.scene_info = scene_info
         self._build_dataset_index()
@@ -67,6 +67,45 @@ class RGBDDataset(data.Dataset):
     @staticmethod
     def depth_read(depth_file):
         return np.load(depth_file)
+    
+    @staticmethod
+    def simulate_tof_noise(depth,
+                       sigma_base=0.001,
+                       sigma_scale=0.01,
+                       missing_prob=0.01):
+        """
+        depth: numpy array in meters
+        returns: noisy ToF-like depth
+        """
+
+        depth = depth.detach().cpu().numpy().copy()
+        depth = np.clip(depth, 0.1, 35.0)
+
+        # ---- 1. Distance-dependent Gaussian noise ----
+        sigma = sigma_base + sigma_scale * (depth ** 2)
+        noise = np.random.normal(0, sigma)
+        depth_noisy = depth + noise
+
+        # ---- 2. Spatial correlation ----
+        correlated_noise = gaussian_filter(
+            np.random.normal(0, 0.002, depth.shape),
+            sigma=1.5
+        )
+        depth_noisy += correlated_noise
+
+        # ---- 3. Edge-based flying pixels ----
+        edges = cv2.Canny((depth * 255 / np.max(depth)).astype(np.uint8), 50, 150)
+        edge_mask = edges > 0
+        depth_shifted = np.roll(depth_noisy, 1, axis=0)
+        depth_noisy[edge_mask] = 0.5 * depth_noisy[edge_mask] + 0.5 * depth_shifted[edge_mask]
+
+        # ---- 4. Random missing pixels ----
+        depth_noisy = np.clip(depth_noisy, 0.0001, 35.0)
+
+        missing_mask = np.random.rand(*depth.shape) < missing_prob
+        depth_noisy[missing_mask] = 10000  # or np.nan
+
+        return depth_noisy
 
     def build_frame_graph(self, poses, depths, intrinsics, f=16, max_flow=512):
         """ compute optical flow distance between all pairs of frames """
@@ -142,14 +181,18 @@ class RGBDDataset(data.Dataset):
         if self.aug is not None:
             images, poses, disps, intrinsics = \
                 self.aug(images, poses, disps, intrinsics)
+        
+        pseudo_tof = self.__class__.simulate_tof_noise(1.0/disps) #In case augmentation is applied
+        tof_inv = torch.from_numpy(1.0 / pseudo_tof).float()
 
         # scale scene
         if len(disps[disps>0.01]) > 0:
             s = disps[disps>0.01].mean()
             disps = disps / s
+            tof_inv = tof_inv / s #Same for TOF image
             poses[...,:3] *= s
 
-        return images, poses, disps, intrinsics 
+        return images, poses, disps, intrinsics, tof_inv
 
     def __len__(self):
         return len(self.dataset_index)

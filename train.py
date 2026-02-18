@@ -49,18 +49,18 @@ def train(gpu, args):
 
     N = args.n_frames
     model = DroidNet()
-    model.freeze_layers()
+    # model.freeze_layers()
 
-    model.unfreeze_cnet(args.unfreeze_cnet)
-    model.unfreeze_fnet(args.unfreeze_fnet)
-    model.unfreeze_update(args.unfreeze_update.split(","))
+    # model.unfreeze_cnet(args.unfreeze_cnet)
+    # model.unfreeze_fnet(args.unfreeze_fnet)
+    # model.unfreeze_update(args.unfreeze_update.split(","))
 
-    model.print_status() #To verify
+    # model.print_status() #To verify
 
     model.cuda()
     model.train()
 
-    model = DDP(model, device_ids=[gpu], find_unused_parameters=False)
+    model = DDP(model, device_ids=[gpu], find_unused_parameters=True) #TODO poner en false (encontrar esos parametros)
 
     if args.ckpt is not None:
         state_dict = OrderedDict([
@@ -74,9 +74,9 @@ def train(gpu, args):
         model.load_state_dict(state_dict, strict=False)
 
     # fetch dataloader
-    db = dataset_factory(['custom_tof'], datapath=args.datapath, 
-            n_frames=args.n_frames, fmin=args.fmin, fmax=args.fmax,
-            imgfolder=args.imgtype)
+    db = dataset_factory(['tartan'], datapath=args.datapath, 
+            n_frames=args.n_frames, fmin=args.fmin, fmax=args.fmax) #,
+            # imgfolder=args.imgtype)
 
     train_sampler = torch.utils.data.distributed.DistributedSampler(
         db, shuffle=True, num_replicas=args.world_size, rank=gpu)
@@ -95,7 +95,7 @@ def train(gpu, args):
     while should_keep_training:
         for i_batch, item in enumerate(train_loader):
             optimizer.zero_grad()
-            images, poses, disps, intrinsics = [x.to('cuda') for x in item]
+            images, poses, disps, intrinsics, tof_img = [x.to('cuda') for x in item]
             # convert poses w2c -> c2w
             Ps = SE3(poses).inv()
             Gs = SE3.IdentityLike(Ps)
@@ -112,7 +112,8 @@ def train(gpu, args):
             # fix first to camera poses
             Gs.data[:,0] = Ps.data[:,0].clone()
             Gs.data[:,1:] = Ps.data[:,[1]].clone()
-            disp0 = torch.ones_like(disps[:,:,3::8,3::8])
+            disp0 = tof_img[:,:,3::8,3::8] # Use TOF input
+            # disp0 = torch.ones_like(disps[:,:,3::8,3::8])
 
             # perform random restarts
             r = 0
@@ -120,7 +121,7 @@ def train(gpu, args):
                 r = rng.random()
                 
                 intrinsics0 = intrinsics / 8.0
-                poses_est, disps_est, residuals = model(Gs, images, disp0, intrinsics0, 
+                poses_est, disps_est, residuals = model(Gs, poses, images, disp0, intrinsics0, 
                     graph, num_steps=args.iters, fixedp=2)
 
                 geo_loss, geo_metrics = losses.geodesic_loss(Ps, poses_est, graph, do_scale=False)
@@ -185,9 +186,9 @@ if __name__ == '__main__':
     parser.add_argument('--restart_prob', type=float, default=0.2)
 
     parser.add_argument('--imgtype',default='ir')
-    parser.add_argument('--unfreeze_cnet',type=int,default=0)
-    parser.add_argument('--unfreeze_fnet',type=int,default=0)
-    parser.add_argument('--unfreeze_update',default="") #SEPARATED BY COMMA
+    # parser.add_argument('--unfreeze_cnet',type=int,default=0)
+    # parser.add_argument('--unfreeze_fnet',type=int,default=0)
+    # parser.add_argument('--unfreeze_update',default="") #SEPARATED BY COMMA
 
     args = parser.parse_args()
 
