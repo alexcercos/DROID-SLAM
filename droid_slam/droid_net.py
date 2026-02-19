@@ -146,7 +146,7 @@ class UpdateModule(nn.Module):
 class DroidNet(nn.Module):
     def __init__(self):
         super(DroidNet, self).__init__()
-        self.fnet = BasicEncoder(output_dim=128, norm_fn='instance')
+        # self.fnet = BasicEncoder(output_dim=128, norm_fn='instance')
         self.cnet = BasicEncoder(output_dim=256, norm_fn='none')
         self.update = UpdateModule()
 
@@ -158,21 +158,21 @@ class DroidNet(nn.Module):
         for name, param in self.named_parameters():
             print(name, param.requires_grad)
     
-    def unfreeze_fnet(self, amount):
-        if amount==0: return
+    # def unfreeze_fnet(self, amount):
+    #     if amount==0: return
 
-        #unfreeze in order, top to bottom
+    #     #unfreeze in order, top to bottom
 
-        if amount>=1:
-            self.fnet.conv2.requires_grad_(True)
-        if amount>=2:
-            self.fnet.layer3.requires_grad_(True)
-        if amount>=3:
-            self.fnet.layer2.requires_grad_(True)
-        if amount>=4:
-            self.fnet.layer1.requires_grad_(True)
-        if amount>=5:
-            self.fnet.conv1.requires_grad_(True)
+    #     if amount>=1:
+    #         self.fnet.conv2.requires_grad_(True)
+    #     if amount>=2:
+    #         self.fnet.layer3.requires_grad_(True)
+    #     if amount>=3:
+    #         self.fnet.layer2.requires_grad_(True)
+    #     if amount>=4:
+    #         self.fnet.layer1.requires_grad_(True)
+    #     if amount>=5:
+    #         self.fnet.conv1.requires_grad_(True)
 
     def unfreeze_cnet(self, amount):
         if amount==0: return
@@ -216,17 +216,18 @@ class DroidNet(nn.Module):
         std = torch.as_tensor([0.229, 0.224, 0.225], device=images.device)
         images = images.sub_(mean[:, None, None]).div_(std[:, None, None])
 
-        fmaps = self.fnet(images)
+        # fmaps = self.fnet(images)
         net = self.cnet(images)
         
         net, inp = net.split([128,128], dim=2)
         net = torch.tanh(net)
         inp = torch.relu(inp)
-        return fmaps, net, inp
+        return net, inp
+        # return fmaps, net, inp
 
 
     #Esto habria que modificarlo si utiliza depths
-    def forward(self, Gs, images, disps, intrinsics, graph=None, num_steps=12, fixedp=2):
+    def forward(self, Gs, images, disps, disps_sens, intrinsics, graph=None, num_steps=12, fixedp=2):
         """ Estimates SE3 or Sim3 between pair of frames """
 
         u = keyframe_indicies(graph)
@@ -235,7 +236,8 @@ class DroidNet(nn.Module):
         ii = ii.to(device=images.device, dtype=torch.long)
         jj = jj.to(device=images.device, dtype=torch.long)
 
-        fmaps, net, inp = self.extract_features(images)
+        # fmaps, net, inp = self.extract_features(images)
+        net, inp = self.extract_features(images)
         net, inp = net[:,ii], inp[:,ii]
         
         # corr_fn = CorrBlock(fmaps[:,ii], fmaps[:,jj], num_levels=4, radius=3)
@@ -246,7 +248,7 @@ class DroidNet(nn.Module):
         coords1, _ = pops.projective_transform(Gs, disps, intrinsics, ii, jj)
         target = coords1.clone()
 
-        dcorr = DepthCorrBlock(disps[-1], Gs, intrinsics[-1], ii, jj, images.device)(coords0)
+        dcorr = DepthCorrBlock(disps_sens[-1], Gs, intrinsics[-1], ii, jj, images.device)(coords0)
 
         Gs_list, disp_list, residual_list = [], [], []
         for step in range(num_steps):

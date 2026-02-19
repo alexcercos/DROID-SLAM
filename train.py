@@ -60,7 +60,7 @@ def train(gpu, args):
     model.cuda()
     model.train()
 
-    model = DDP(model, device_ids=[gpu], find_unused_parameters=True) #TODO poner en false (encontrar esos parametros)
+    model = DDP(model, device_ids=[gpu], find_unused_parameters=False)
 
     if args.ckpt is not None:
         state_dict = OrderedDict([
@@ -95,7 +95,7 @@ def train(gpu, args):
     while should_keep_training:
         for i_batch, item in enumerate(train_loader):
             optimizer.zero_grad()
-            images, poses, disps, intrinsics, tof_img = [x.to('cuda') for x in item]
+            images, poses, disps, intrinsics, tof_imgs = [x.to('cuda') for x in item]
             # convert poses w2c -> c2w
             Ps = SE3(poses).inv()
             Gs = SE3.IdentityLike(Ps)
@@ -112,8 +112,8 @@ def train(gpu, args):
             # fix first to camera poses
             Gs.data[:,0] = Ps.data[:,0].clone()
             Gs.data[:,1:] = Ps.data[:,[1]].clone()
-            disp0 = tof_img[:,:,3::8,3::8] # Use TOF input
-            # disp0 = torch.ones_like(disps[:,:,3::8,3::8])
+            disps_sens = tof_imgs[:,:,3::8,3::8] # Use TOF input
+            disp0 = torch.ones_like(disps[:,:,3::8,3::8])
 
             # perform random restarts
             r = 0
@@ -121,7 +121,7 @@ def train(gpu, args):
                 r = rng.random()
                 
                 intrinsics0 = intrinsics / 8.0
-                poses_est, disps_est, residuals = model(Gs, images, disp0, intrinsics0, 
+                poses_est, disps_est, residuals = model(Gs, images, disp0, disps_sens, intrinsics0, 
                     graph, num_steps=args.iters, fixedp=2)
 
                 geo_loss, geo_metrics = losses.geodesic_loss(Ps, poses_est, graph, do_scale=False)
