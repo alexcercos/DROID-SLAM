@@ -72,16 +72,21 @@ class MotionFilter:
             # index correlation volume
             coords0 = pops.coords_grid(ht, wd, device=self.device)[None,None]
 
+            t_disps = torch.stack([self.fdep, gdep], dim=0).to(self.device, dtype=torch.float)
+            t_poses = torch.tensor([0, 0, 0, 0, 0, 0, 1], dtype=torch.float, device=self.device).unsqueeze(0).repeat(2, 1)
+            t_intr = self.video.intrinsics[0].repeat(2,1)
+            t_ii = torch.tensor([0], device=self.device, dtype=torch.long)
+            t_jj = torch.tensor([1], device=self.device, dtype=torch.long)
+            Gs = lietorch.SE3(t_poses[None])
+
             if self.video.use_depth_corr:
-                t_disps = torch.stack([self.fdep, gdep], dim=0).to(self.device, dtype=torch.float)
-                t_poses = torch.tensor([0, 0, 0, 0, 0, 0, 1], dtype=torch.float, device=self.device).unsqueeze(0).repeat(2, 1)
-                t_intr = self.video.intrinsics[0].repeat(2,1)
-                t_ii = torch.tensor([0], device=self.device, dtype=torch.long)
-                t_jj = torch.tensor([1], device=self.device, dtype=torch.long)
-                Gs = lietorch.SE3(t_poses[None])
+                
                 corr = DepthCorrBlock(t_disps, Gs, t_intr, t_ii, t_jj, self.device)(coords0)
             else:
-                corr = CorrBlock(self.fmap[None,[0]], gmap[None,[0]])(coords0)
+                ccorr = CorrBlock(self.fmap[None,[0]], gmap[None,[0]])(coords0)
+                dcorr = DepthCorrBlock(t_disps, Gs, t_intr, t_ii, t_jj, self.device)(coords0)
+
+                corr  = torch.cat((ccorr, dcorr), dim=2)
             
             # print("MF corr:",corr.shape,"dcorr",dcorr.shape,self.video.use_depth_corr) #,"dcorr:",dcorr.shape)
 

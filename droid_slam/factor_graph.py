@@ -211,13 +211,15 @@ class FactorGraph:
         # correlation features
         if self.video.use_depth_corr: #TODO usar disps o disps_sens?
             Gs = SE3(self.video.poses[None])
-            corr = DepthCorrBlock(self.video.disps, Gs, self.video.intrinsics, 
+            corr = DepthCorrBlock(self.video.disps_sens, Gs, self.video.intrinsics, 
                                self.ii, self.jj, self.device)(self.coords0)
         else:
-            corr = self.corr(coords1)
+            ccorr = self.corr(coords1)
             Gs = SE3(self.video.poses[None])
-            dcorr = DepthCorrBlock(self.video.disps, Gs, self.video.intrinsics, 
+            dcorr = DepthCorrBlock(self.video.disps_sens, Gs, self.video.intrinsics, 
                     self.ii, self.jj, self.device)(self.coords0)
+            
+            corr  = torch.cat((ccorr, dcorr), dim=2)
 
             if fr_name is not None:
                 # print("-->",fr_name,corr.shape,self.ii.shape)
@@ -293,10 +295,15 @@ class FactorGraph:
 
                 if self.video.use_depth_corr: #TODO usar disps o disps_sens?
                     Gs = SE3(self.video.poses[None])
-                    corr1 = DepthCorrBlock(self.video.disps, Gs, self.video.intrinsics, 
+                    corr1 = DepthCorrBlock(self.video.disps_sens, Gs, self.video.intrinsics, 
                                         self.ii[v], self.jj[v], self.device)(self.coords0)
                 else:
-                    corr1 = corr_op(coords1[:,v], rig * iis, rig * jjs + (iis == jjs).long())
+                    ccorr = corr_op(coords1[:,v], rig * iis, rig * jjs + (iis == jjs).long())
+                    Gs = SE3(self.video.poses[None])
+                    dcorr = DepthCorrBlock(self.video.disps_sens, Gs, self.video.intrinsics, 
+                                        self.ii[v], self.jj[v], self.device)(self.coords0)
+                    
+                    corr1  = torch.cat((ccorr, dcorr), dim=2)
 
                 # print("altcorr:",corr1.shape,"dcorr:",dcorr.shape, self.video.use_depth_corr)
 

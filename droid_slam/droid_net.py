@@ -78,7 +78,7 @@ class GraphAgg(nn.Module):
 class UpdateModule(nn.Module):
     def __init__(self):
         super(UpdateModule, self).__init__()
-        cor_planes = 4 * (2*3 + 1)**2
+        cor_planes = 2 * 4 * (2*3 + 1)**2 # ADDED DEPTH CORR (2 *)
 
         self.corr_encoder = nn.Sequential(
             nn.Conv2d(cor_planes, 128, 1, padding=0),
@@ -146,7 +146,7 @@ class UpdateModule(nn.Module):
 class DroidNet(nn.Module):
     def __init__(self):
         super(DroidNet, self).__init__()
-        # self.fnet = BasicEncoder(output_dim=128, norm_fn='instance')
+        self.fnet = BasicEncoder(output_dim=128, norm_fn='instance')
         self.cnet = BasicEncoder(output_dim=256, norm_fn='none')
         self.update = UpdateModule()
 
@@ -158,21 +158,21 @@ class DroidNet(nn.Module):
         for name, param in self.named_parameters():
             print(name, param.requires_grad)
     
-    # def unfreeze_fnet(self, amount):
-    #     if amount==0: return
+    def unfreeze_fnet(self, amount):
+        if amount==0: return
 
-    #     #unfreeze in order, top to bottom
+        #unfreeze in order, top to bottom
 
-    #     if amount>=1:
-    #         self.fnet.conv2.requires_grad_(True)
-    #     if amount>=2:
-    #         self.fnet.layer3.requires_grad_(True)
-    #     if amount>=3:
-    #         self.fnet.layer2.requires_grad_(True)
-    #     if amount>=4:
-    #         self.fnet.layer1.requires_grad_(True)
-    #     if amount>=5:
-    #         self.fnet.conv1.requires_grad_(True)
+        if amount>=1:
+            self.fnet.conv2.requires_grad_(True)
+        if amount>=2:
+            self.fnet.layer3.requires_grad_(True)
+        if amount>=3:
+            self.fnet.layer2.requires_grad_(True)
+        if amount>=4:
+            self.fnet.layer1.requires_grad_(True)
+        if amount>=5:
+            self.fnet.conv1.requires_grad_(True)
 
     def unfreeze_cnet(self, amount):
         if amount==0: return
@@ -216,14 +216,13 @@ class DroidNet(nn.Module):
         std = torch.as_tensor([0.229, 0.224, 0.225], device=images.device)
         images = images.sub_(mean[:, None, None]).div_(std[:, None, None])
 
-        # fmaps = self.fnet(images)
+        fmaps = self.fnet(images)
         net = self.cnet(images)
         
         net, inp = net.split([128,128], dim=2)
         net = torch.tanh(net)
         inp = torch.relu(inp)
-        return net, inp
-        # return fmaps, net, inp
+        return fmaps, net, inp
 
 
     #Esto habria que modificarlo si utiliza depths
@@ -236,11 +235,10 @@ class DroidNet(nn.Module):
         ii = ii.to(device=images.device, dtype=torch.long)
         jj = jj.to(device=images.device, dtype=torch.long)
 
-        # fmaps, net, inp = self.extract_features(images)
-        net, inp = self.extract_features(images)
+        fmaps, net, inp = self.extract_features(images)
         net, inp = net[:,ii], inp[:,ii]
         
-        # corr_fn = CorrBlock(fmaps[:,ii], fmaps[:,jj], num_levels=4, radius=3)
+        corr_fn = CorrBlock(fmaps[:,ii], fmaps[:,jj], num_levels=4, radius=3)
 
         ht, wd = images.shape[-2:]
         coords0 = pops.coords_grid(ht//8, wd//8, device=images.device)
@@ -258,15 +256,17 @@ class DroidNet(nn.Module):
             target = target.detach()
 
             # extract motion features
-            # corr = corr_fn(coords1)
+            corr = corr_fn(coords1)
             resd = target - coords1
             flow = coords1 - coords0
 
             motion = torch.cat([flow, resd], dim=-1)
             motion = motion.permute(0,1,4,2,3).clamp(-64.0, 64.0)
 
+            conc_corr  = torch.cat((corr, dcorr), dim=2)
+
             net, delta, weight, eta, upmask = \
-                self.update(net, inp, dcorr, motion, ii, jj)
+                self.update(net, inp, conc_corr, motion, ii, jj)
 
             target = coords1 + delta
 

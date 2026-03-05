@@ -203,7 +203,8 @@ if __name__ == '__main__':
             for pos,quat,ts in zip(traj_est.positions_xyz,traj_est.orientations_quat_wxyz,traj_est.timestamps):
                 file.write(f"{ts} {pos[0]} {pos[1]} {pos[2]} {quat[1]} {quat[2]} {quat[3]} {quat[0]}\n")
 
-    except:
+    except Exception as e: 
+        print(e)
         fname = f"evaluations/{args.testmode}_{args.depthmode}"
         if args.no_use_depth: fname += "_nd"
         fname+=".txt"
