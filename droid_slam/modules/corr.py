@@ -14,7 +14,13 @@ class DepthCorrBlock:
         coords, valid_mask = \
             pops.projective_transform(Gs, dmaps[None], intrinsics[None], ii, jj, return_depth=True)
 
-        depth_jj = 1.0 / dmaps[jj]
+        eps = 1e-6
+        depth = dmaps[jj]
+        depth_jj = torch.zeros_like(depth)
+        valid = depth <= 0
+
+        depth_jj[valid] = 1.0 / depth[valid]
+        # depth_jj = 1.0 / torch.clamp(dmaps[jj], min=eps)
 
         x = coords[..., 0]
         y = coords[..., 1]
@@ -39,8 +45,6 @@ class DepthCorrBlock:
             (y0 >= 0) & (y1 <= H)
         ).unsqueeze(-1)
 
-        dmask = valid_mask.bool() & in_bounds
-
         x0 = x0.clamp(0, W-1)
         y0 = y0.clamp(0, H-1)
         x1 = x1.clamp(0, W-1)
@@ -54,12 +58,22 @@ class DepthCorrBlock:
 
         depth_sampled = w00*d00 + w01*d01 + w10*d10 + w11*d11
 
-        zdepth = 1.0 / coords[..., 2]
+        z = coords[..., 2]
+
+        zdepth = torch.zeros_like(z)
+        valid_z = (z != 0) & torch.isfinite(z)
+
+        zdepth[valid_z] = 1.0 / z[valid_z]
+
+        dmask = valid_mask.bool() & in_bounds & valid_z.unsqueeze(-1)
+
+        # zdepth = 1.0 / torch.clamp(coords[..., 2], min=eps)
         depth_error = (depth_sampled - zdepth).abs().unsqueeze(-1)
         
         K = 10.0
         corr = torch.exp(-K * depth_error) * dmask
         corr = corr.squeeze(-1) # Remove last dimension (1)
+        corr = torch.nan_to_num(corr, nan=0.0, posinf=0.0, neginf=0.0)
 
         self.corr_pyramid = []
 

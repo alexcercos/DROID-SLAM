@@ -55,16 +55,15 @@ class MotionFilter:
 
         # extract features
         gmap = self.__feature_encoder(inputs)
-        if self.video.use_depth_corr:
-            gdep = depth[3::8,3::8]
-            gdep = torch.where(gdep>0, 1.0/gdep, gdep)
+        gdep = depth[3::8,3::8]
+        gdep = torch.where(gdep>0, 1.0/gdep, gdep)
         
         ### always add first frame to the depth video ###
         if self.video.counter.value == 0:
             net, inp = self.__context_encoder(inputs[:,[0]])
             self.net, self.inp, self.fmap = net, inp, gmap
-            if self.video.use_depth_corr:
-                self.fdep = gdep
+            # if self.video.use_depth_corr:
+            self.fdep = gdep
             self.video.append(tstamp, image[0], Id, 1.0, depth, intrinsics / 8.0, gmap, net[0,0], inp[0,0])
 
         ### only add new frame if there is enough motion ###
